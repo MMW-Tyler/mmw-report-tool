@@ -14,7 +14,7 @@
   --red: #e05454; --red-light: #fdf0f0; --amber: #c97d10; --amber-light: #fdf5e6; --amber-border: #f0d89a;
 }
 html { scroll-behavior: smooth; }
-body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--dark); min-height: 100vh; overflow-x: hidden; }
+body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--dark); min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; }
 body::before { content: ''; position: fixed; inset: 0; z-index: 0; background-image: radial-gradient(circle, #c5ddd7 1px, transparent 1px); background-size: 28px 28px; opacity: 0.4; pointer-events: none; }
 
 /* NAV */
@@ -493,7 +493,7 @@ input::placeholder { color: #b8c8cc; }
 
 
 /* Footer */
-footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; background: var(--white); }
+footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; background: var(--white); margin-top: auto; }
 .footer-left, .footer-right { font-family: 'Lato', sans-serif; font-size: 12px; color: var(--text-muted); letter-spacing: 0.05em; }
 
 @keyframes fadeUp { from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);} }
@@ -671,7 +671,7 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
     <div class="loading-title">Generating Report</div>
     <div class="loading-sub">Pulling live data from multiple sources.<br>This takes about 30–45 seconds.</div>
     <div class="lsteps">
-      <div class="lstep" id="ls1"><div class="lstep-dot"><span class="lstep-num">1</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Looking up business on Google Places</div>
+      <div class="lstep" id="ls1"><div class="lstep-dot"><span class="lstep-num">1</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Google Business Profile confirmed</div>
       <div class="lstep" id="ls2"><div class="lstep-dot"><span class="lstep-num">2</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Reading website &amp; extracting services</div>
       <div class="lstep" id="ls3"><div class="lstep-dot"><span class="lstep-num">3</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Running citation &amp; presence scan</div>
       <div class="lstep" id="ls4"><div class="lstep-dot"><span class="lstep-num">4</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Checking website performance</div>
@@ -1083,8 +1083,8 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
 </div><!-- /reportSection -->
 
 <footer>
-  <div class="footer-left">© 2025 Medical Marketing Whiz · Internal Use Only</div>
-  <div class="footer-right">Marketing Analysis Tool · v1.1</div>
+  <div class="footer-left">© 2026 Medical Marketing Whiz · Internal Use Only</div>
+  <div class="footer-right">Marketing Analysis Tool · v3.0</div>
 </footer>
 
 <!-- ══════════════════════════════════════════════════
@@ -1246,10 +1246,10 @@ async function loadGoogleMapsAPI() {
   try {
     const cfg = await fetch('/api/config').then(r => r.json());
     if (!cfg.googleApiKey) return;
-    if (document.getElementById('gmaps-script')) return; // already loaded
+    if (document.getElementById('gmaps-script')) return;
     const script = document.createElement('script');
     script.id  = 'gmaps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${cfg.googleApiKey}&libraries=places&callback=initAutocomplete`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${cfg.googleApiKey}&libraries=places&loading=async&callback=initAutocomplete`;
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
@@ -1261,19 +1261,26 @@ async function loadGoogleMapsAPI() {
 // Called by Google Maps script once loaded
 window.initAutocomplete = function() {
   const input = document.getElementById('f_search');
-  if (!input || !window.google) return;
-  _autocomplete = new google.maps.places.Autocomplete(input, {
+  if (!input || !window.google?.maps?.places) return;
+
+  // Use legacy Autocomplete — attaches directly to the input with no overlay
+  // PlaceAutocompleteElement requires a separate DOM element and breaks the UX
+  if (!window.google.maps.places.Autocomplete) return;
+
+  const ac = new google.maps.places.Autocomplete(input, {
     types: ['establishment'],
-    fields: ['place_id', 'name', 'formatted_address', 'rating', 'user_ratings_total', 'geometry', 'website', 'formatted_phone_number', 'address_components', 'business_status', 'types'],
+    fields: ['place_id','name','formatted_address','rating','user_ratings_total',
+             'geometry','website','formatted_phone_number','address_components',
+             'business_status','types'],
   });
-  _autocomplete.addListener('place_changed', () => {
-    const place = _autocomplete.getPlace();
+
+  ac.addListener('place_changed', () => {
+    const place = ac.getPlace();
     if (!place.place_id) return;
-    // Parse address components
     const comps = place.address_components || [];
     const getComp  = (type) => { const c = comps.find(c => c.types.includes(type)); return c ? c.long_name  : ''; };
     const getShort = (type) => { const c = comps.find(c => c.types.includes(type)); return c ? c.short_name : ''; };
-    const placeData = {
+    confirmPlace({
       placeId:          place.place_id,
       name:             place.name,
       formattedAddress: place.formatted_address,
@@ -1290,8 +1297,7 @@ window.initAutocomplete = function() {
       types:            place.types || [],
       lat:              place.geometry?.location?.lat() || null,
       lng:              place.geometry?.location?.lng() || null,
-    };
-    confirmPlace(placeData);
+    });
   });
 };
 
@@ -1482,8 +1488,9 @@ async function generateReport(){
   document.getElementById('genBtn').disabled=true;
   document.getElementById('loadingOverlay').classList.add('active');
   setLS(1);
-  const timings=[4000,8000,13000,18000,24000,28000];
-  timings.forEach((t,i)=>setTimeout(()=>setLS(i+2),t));
+  setLS(2); // Step 1 (GBP) already done — mark complete immediately
+  const timings=[8000,13000,18000,24000,28000];
+  timings.forEach((t,i)=>setTimeout(()=>setLS(i+3),t));
 
   try{
     const res=await fetch('/api/generate-report',{
