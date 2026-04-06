@@ -692,10 +692,87 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
 <div id="intakeSection">
   <div class="eyebrow">Internal Tool · MMW Team Only</div>
   <h1 class="page-title">Marketing <em>Analysis</em> Report</h1>
-  <p class="page-desc">Enter the prospect's name, location, and website. The tool auto-pulls their full digital presence — citations, SEO, backlinks, AI visibility — and builds a program recommendation ready for the sales call.</p>
-  <div class="intake-card">
-    <div class="intake-card-title">Prospect Details</div>
-    <p class="intake-card-desc">Three fields is all you need. Address, phone, services, and categories are pulled automatically from Google and the prospect's website.</p>
+  <p class="page-desc">Search for the prospect's business to confirm their Google Business Profile, then configure and generate the full report.</p>
+
+  <!-- ── STEP 1: SEARCH ── -->
+  <div class="intake-card" id="step1Card">
+    <div class="intake-card-title">Step 1 — Find the Business</div>
+    <p class="intake-card-desc">Start typing the business name — Google autocomplete will suggest matches. Select the correct listing or search manually.</p>
+
+    <div style="position:relative;margin-bottom:16px;">
+      <label class="field-label">Business Name *</label>
+      <input type="text" id="f_search" placeholder="e.g. Advanced Beauty Lab Newton MA"
+        style="padding-right:48px;"
+        oninput="onSearchInput()"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();searchBusiness();}" />
+      <button onclick="searchBusiness()" id="searchBtn"
+        style="position:absolute;right:6px;bottom:6px;height:34px;padding:0 14px;background:var(--green);border:none;border-radius:7px;color:#fff;font-family:'Barlow',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:background 0.15s;"
+        onmouseover="this.style.background='var(--green-mid)'" onmouseout="this.style.background='var(--green)'">
+        Search
+      </button>
+    </div>
+
+    <!-- Autocomplete dropdown -->
+    <div id="autocompleteDropdown" style="display:none;position:relative;z-index:100;margin-top:-10px;margin-bottom:12px;">
+      <div id="autocompleteList" style="background:#fff;border:1px solid var(--border-strong);border-radius:10px;box-shadow:0 8px 24px rgba(50,53,71,0.12);overflow:hidden;"></div>
+    </div>
+
+    <!-- Search results / candidate cards -->
+    <div id="searchResults" style="display:none;">
+      <div style="font-family:'Lato',sans-serif;font-size:12px;color:var(--text-muted);margin-bottom:12px;" id="searchResultsLabel">Select the correct business:</div>
+      <div id="candidateCards" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <button onclick="showManualEntry()" style="margin-top:12px;background:none;border:1px dashed var(--border-strong);border-radius:8px;padding:10px 16px;font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-muted);cursor:pointer;width:100%;transition:all 0.15s;"
+        onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'"
+        onmouseout="this.style.borderColor='var(--border-strong)';this.style.color='var(--text-muted)'">
+        Not finding it? Enter manually →
+      </button>
+    </div>
+
+    <!-- Manual entry fallback -->
+    <div id="manualEntry" style="display:none;">
+      <div style="background:var(--amber-light);border:1px solid var(--amber-border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--amber);font-family:'Lato',sans-serif;">
+        ⚠ Manual entry — GBP data will be limited. Enter as much as you know.
+      </div>
+      <div class="form-row">
+        <div><label class="field-label">Business Name *</label><input type="text" id="f_name_manual" placeholder="e.g. Advanced Beauty Lab" /></div>
+        <div><label class="field-label">Website URL</label><input type="url" id="f_website_manual" placeholder="https://www.example.com" /></div>
+      </div>
+      <div class="form-row">
+        <div><label class="field-label">City *</label><input type="text" id="f_city_manual" placeholder="e.g. Newton" /></div>
+        <div><label class="field-label">State *</label><input type="text" id="f_state_manual" placeholder="e.g. MA" maxlength="2" /></div>
+      </div>
+      <button onclick="confirmManualEntry()" class="btn-generate" style="margin-top:4px;">
+        Continue with Manual Entry →
+      </button>
+    </div>
+
+    <div class="error-msg" id="searchErrMsg"></div>
+  </div>
+
+  <!-- ── STEP 2: CONFIGURE & GENERATE ── -->
+  <div class="intake-card" id="step2Card" style="display:none;">
+
+    <!-- Selected business banner -->
+    <div id="selectedBusiness" style="background:var(--green-light);border:1px solid var(--border-strong);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+        <div style="width:36px;height:36px;border-radius:9px;background:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div style="min-width:0;">
+          <div style="font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="sel_name">—</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:1px;" id="sel_address">—</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <div id="sel_rating" style="font-size:13px;font-weight:700;color:var(--green);"></div>
+        <button onclick="resetToStep1()" style="background:#fff;border:1px solid var(--border-strong);border-radius:7px;padding:5px 12px;font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;color:var(--text-muted);cursor:pointer;white-space:nowrap;">
+          ← Change
+        </button>
+      </div>
+    </div>
+
+    <div class="intake-card-title">Step 2 — Configure Report</div>
+
     <!-- Niche Selector -->
     <div style="margin-bottom:20px;">
       <label class="field-label">Clinic Niche — Keyword Set <span style="font-weight:300;letter-spacing:0;text-transform:none;font-size:10px;">(optional — auto-detected if not selected)</span></label>
@@ -712,28 +789,23 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
         <button type="button" class="niche-pill" data-niche="integrative_wellness" onclick="toggleNiche(this)">Integrative / Wellness</button>
       </div>
       <div style="font-family:'Lato',sans-serif;font-size:12px;font-weight:300;color:var(--text-muted);margin-top:8px;line-height:1.5;" id="nicheHint">
-        Keywords will be auto-suggested based on the clinic's detected specialty. Select up to 3 niches manually to override — keyword sets are merged and searched locally.
+        Keywords will be auto-suggested based on the clinic's detected specialty. Select up to 3 niches manually to override.
       </div>
     </div>
-    <div class="form-row">
-      <div><label class="field-label">Business Name *</label><input type="text" id="f_name" placeholder="e.g. Advanced Beauty Lab" /></div>
-      <div><label class="field-label">Website URL</label><input type="url" id="f_website" placeholder="https://www.example.com" /></div>
-    </div>
-    <div class="form-row">
-      <div><label class="field-label">City *</label><input type="text" id="f_city" placeholder="e.g. Newton" /></div>
-      <div><label class="field-label">State *</label><input type="text" id="f_state" placeholder="e.g. MA" maxlength="2" /></div>
-    </div>
-    <div class="form-row">
+
+    <!-- Website (editable, pre-filled from GBP) -->
+    <div class="form-row" style="margin-bottom:16px;">
+      <div>
+        <label class="field-label">Website URL <span style="font-weight:300;letter-spacing:0;text-transform:none;font-size:10px;">(pre-filled from GBP if available)</span></label>
+        <input type="url" id="f_website" placeholder="https://www.example.com" />
+      </div>
       <div>
         <label class="field-label">Email List Size <span style="font-weight:300;letter-spacing:0;text-transform:none;font-size:10px;">(optional)</span></label>
         <input type="text" id="f_emailList" placeholder="e.g. 450 contacts" />
       </div>
-      <div>
-        <label class="field-label">&nbsp;</label>
-        <div style="font-family:'Lato',sans-serif;font-size:12px;font-weight:300;color:var(--text-muted);padding:12px 0;line-height:1.5;">Used to assess email nurture opportunity and list growth strategy.</div>
-      </div>
     </div>
-    <!-- Keywords & Competitors — always visible -->
+
+    <!-- Keywords & Competitors -->
     <div style="margin-bottom:16px;position:relative;z-index:2;">
       <div style="padding:14px 16px;background:var(--green-lighter);border:1px solid var(--border-strong);border-radius:9px;">
         <div style="margin-bottom:12px;">
@@ -749,6 +821,7 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
         </div>
       </div>
     </div>
+
     <button class="btn-generate" id="genBtn" onclick="generateReport()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       Generate Report
@@ -1164,23 +1237,273 @@ function updateNicheHint() {
 // ── COMPETITIVE TOGGLE ──
 let compEnabled = false;
 // ── GENERATE ──
+// ── STEP 1/2 STATE ──
+let _confirmedPlace = null; // holds the selected GBP place object
+let _autocomplete   = null; // Google Places Autocomplete instance
+
+// Load Google Maps JS API dynamically using key from /api/config
+async function loadGoogleMapsAPI() {
+  try {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    if (!cfg.googleApiKey) return;
+    if (document.getElementById('gmaps-script')) return; // already loaded
+    const script = document.createElement('script');
+    script.id  = 'gmaps-script';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${cfg.googleApiKey}&libraries=places&callback=initAutocomplete`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  } catch(e) {
+    console.warn('Could not load Google Maps API:', e.message);
+  }
+}
+
+// Called by Google Maps script once loaded
+window.initAutocomplete = function() {
+  const input = document.getElementById('f_search');
+  if (!input || !window.google) return;
+  _autocomplete = new google.maps.places.Autocomplete(input, {
+    types: ['establishment'],
+    fields: ['place_id', 'name', 'formatted_address', 'rating', 'user_ratings_total', 'geometry', 'website', 'formatted_phone_number', 'address_components', 'business_status', 'types'],
+  });
+  _autocomplete.addListener('place_changed', () => {
+    const place = _autocomplete.getPlace();
+    if (!place.place_id) return;
+    // Parse address components
+    const comps = place.address_components || [];
+    const getComp  = (type) => { const c = comps.find(c => c.types.includes(type)); return c ? c.long_name  : ''; };
+    const getShort = (type) => { const c = comps.find(c => c.types.includes(type)); return c ? c.short_name : ''; };
+    const placeData = {
+      placeId:          place.place_id,
+      name:             place.name,
+      formattedAddress: place.formatted_address,
+      phone:            place.formatted_phone_number || '',
+      street:           [getComp('street_number'), getComp('route')].filter(Boolean).join(' '),
+      suite:            getComp('subpremise') || '',
+      city:             getComp('locality') || getComp('sublocality'),
+      state:            getShort('administrative_area_level_1'),
+      zip:              getComp('postal_code'),
+      website:          place.website || '',
+      rating:           place.rating || null,
+      reviewCount:      place.user_ratings_total || 0,
+      businessStatus:   place.business_status || '',
+      types:            place.types || [],
+      lat:              place.geometry?.location?.lat() || null,
+      lng:              place.geometry?.location?.lng() || null,
+    };
+    confirmPlace(placeData);
+  });
+};
+
+function onSearchInput() {
+  // Clear confirmed place if user edits the search box after confirming
+  if (_confirmedPlace) {
+    _confirmedPlace = null;
+    document.getElementById('searchResults').style.display = 'none';
+  }
+}
+
+async function searchBusiness() {
+  const query = document.getElementById('f_search').value.trim();
+  if (!query) { showSearchErr('Please enter a business name.'); return; }
+  document.getElementById('searchErrMsg').style.display = 'none';
+  const btn = document.getElementById('searchBtn');
+  btn.textContent = '...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/places-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    const data = await res.json();
+    btn.textContent = 'Search';
+    btn.disabled = false;
+
+    if (!data.candidates || data.candidates.length === 0) {
+      showSearchErr('No businesses found. Try adding the city and state to your search, or use manual entry.');
+      document.getElementById('searchResults').style.display = 'block';
+      document.getElementById('candidateCards').innerHTML = '';
+      document.getElementById('searchResultsLabel').textContent = 'No results found.';
+      return;
+    }
+
+    renderCandidates(data.candidates);
+  } catch(e) {
+    btn.textContent = 'Search';
+    btn.disabled = false;
+    showSearchErr('Search failed: ' + e.message);
+  }
+}
+
+function renderCandidates(candidates) {
+  const container = document.getElementById('candidateCards');
+  const resultsDiv = document.getElementById('searchResults');
+  document.getElementById('searchResultsLabel').textContent = `${candidates.length} result${candidates.length > 1 ? 's' : ''} found — select the correct business:`;
+
+  container.innerHTML = candidates.map((c, i) => `
+    <div onclick="selectCandidate(${i})" data-idx="${i}"
+      style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:space-between;gap:12px;"
+      onmouseover="this.style.borderColor='var(--green)';this.style.background='var(--green-lighter)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+      <div style="min-width:0;">
+        <div style="font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;color:var(--dark);margin-bottom:2px;">${c.name}</div>
+        <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.formattedAddress}</div>
+        ${c.rating ? `<div style="font-size:11px;color:var(--green);margin-top:3px;font-weight:600;">★ ${c.rating} (${c.reviewCount.toLocaleString()} reviews)</div>` : ''}
+      </div>
+      <div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--green-light);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  `).join('');
+
+  // Store candidates for selection
+  container._candidates = candidates;
+  resultsDiv.style.display = 'block';
+}
+
+async function selectCandidate(idx) {
+  const candidates = document.getElementById('candidateCards')._candidates;
+  const c = candidates[idx];
+  // Show loading state on the card
+  const cards = document.querySelectorAll('#candidateCards > div');
+  cards.forEach((card, i) => {
+    card.style.opacity = i === idx ? '1' : '0.4';
+    card.style.pointerEvents = 'none';
+  });
+
+  try {
+    // Fetch full details for selected candidate
+    const res = await fetch('/api/places-details', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placeId: c.placeId }),
+    });
+    const details = await res.json();
+    if (details.error) throw new Error(details.error);
+    confirmPlace(details);
+  } catch(e) {
+    showSearchErr('Could not load business details: ' + e.message);
+    cards.forEach(card => { card.style.opacity = '1'; card.style.pointerEvents = ''; });
+  }
+}
+
+function confirmPlace(placeData) {
+  _confirmedPlace = placeData;
+
+  // Update the selected business banner
+  document.getElementById('sel_name').textContent    = placeData.name || '—';
+  document.getElementById('sel_address').textContent = placeData.formattedAddress || '—';
+  document.getElementById('sel_rating').textContent  = placeData.rating ? `★ ${placeData.rating}` : '';
+
+  // Pre-fill website if available from GBP
+  if (placeData.website) {
+    document.getElementById('f_website').value = placeData.website;
+  }
+
+  // Transition to step 2
+  document.getElementById('step1Card').style.display  = 'none';
+  document.getElementById('step2Card').style.display  = 'block';
+  document.getElementById('step2Card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetToStep1() {
+  _confirmedPlace = null;
+  document.getElementById('step2Card').style.display = 'none';
+  document.getElementById('step1Card').style.display = 'block';
+  document.getElementById('searchResults').style.display = 'none';
+  document.getElementById('candidateCards').innerHTML = '';
+  document.getElementById('f_search').value = '';
+  document.getElementById('f_website').value = '';
+  document.getElementById('f_emailList').value = '';
+  document.getElementById('f_targetKeywords').value = '';
+  document.getElementById('f_competitors').value = '';
+}
+
+function showManualEntry() {
+  document.getElementById('manualEntry').style.display = 'block';
+  document.getElementById('manualEntry').scrollIntoView({ behavior: 'smooth' });
+}
+
+function confirmManualEntry() {
+  const name    = document.getElementById('f_name_manual').value.trim();
+  const city    = document.getElementById('f_city_manual').value.trim();
+  const state   = document.getElementById('f_state_manual').value.trim();
+  const website = document.getElementById('f_website_manual').value.trim();
+  if (!name || !city || !state) { showSearchErr('Please enter business name, city, and state.'); return; }
+  // Build a minimal place object for manual entry
+  _confirmedPlace = {
+    placeId: null,
+    name,
+    formattedAddress: `${city}, ${state}`,
+    city,
+    state,
+    website: website || '',
+    phone: '',
+    rating: null,
+    reviewCount: 0,
+    businessStatus: '',
+    types: [],
+    isManual: true,
+  };
+  if (website) document.getElementById('f_website').value = website;
+  document.getElementById('sel_name').textContent    = name;
+  document.getElementById('sel_address').textContent = `${city}, ${state} (manual entry)`;
+  document.getElementById('sel_rating').textContent  = '';
+  document.getElementById('step1Card').style.display  = 'none';
+  document.getElementById('step2Card').style.display  = 'block';
+  document.getElementById('step2Card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showSearchErr(msg) {
+  const el = document.getElementById('searchErrMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// Load Maps API on page load
+loadGoogleMapsAPI();
+
 async function generateReport(){
-  const name=document.getElementById('f_name').value.trim();
-  const city=document.getElementById('f_city').value.trim();
-  const state=document.getElementById('f_state').value.trim();
-  const website=document.getElementById('f_website').value.trim();
-  const emailList=document.getElementById('f_emailList').value.trim();
-  const targetKeywords=document.getElementById('f_targetKeywords').value.split(',').map(s=>s.trim()).filter(Boolean);
-  const manualCompetitors=document.getElementById('f_competitors').value.split(',').map(s=>s.trim()).filter(Boolean);
-  if(!name||!city||!state){showErr('Please enter a business name, city, and state.');return;}
+  if (!_confirmedPlace) { showErr('Please search for and select a business first.'); return; }
+
+  const name    = _confirmedPlace.name;
+  const city    = _confirmedPlace.city;
+  const state   = _confirmedPlace.state;
+  const website = document.getElementById('f_website').value.trim() || _confirmedPlace.website || '';
+  const emailList = document.getElementById('f_emailList').value.trim();
+  const targetKeywords = document.getElementById('f_targetKeywords').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const manualCompetitors = document.getElementById('f_competitors').value.split(',').map(s=>s.trim()).filter(Boolean);
+
+  if (!name || !city || !state) { showErr('Business city and state could not be determined. Please use manual entry.'); return; }
+
   document.getElementById('errMsg').style.display='none';
   document.getElementById('genBtn').disabled=true;
   document.getElementById('loadingOverlay').classList.add('active');
   setLS(1);
   const timings=[4000,8000,13000,18000,24000,28000];
   timings.forEach((t,i)=>setTimeout(()=>setLS(i+2),t));
+
   try{
-    const res=await fetch('/api/generate-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessName:name,city,state,website,emailList,targetKeywords,manualCompetitors,runCompetitive:true,forcedNiches:selectedNiches})});
+    const res=await fetch('/api/generate-report',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        businessName: name,
+        city,
+        state,
+        website,
+        emailList,
+        targetKeywords,
+        manualCompetitors,
+        runCompetitive: true,
+        forcedNiches: selectedNiches,
+        // Pass confirmed place data so server can skip the GBP lookup if we already have it
+        confirmedPlaceId: _confirmedPlace.placeId || null,
+        confirmedPlaceData: _confirmedPlace.isManual ? null : _confirmedPlace,
+      })
+    });
     const data=await res.json();
     if(data.error&&!data.places)throw new Error(data.error);
     setLS(8);
@@ -1190,14 +1513,16 @@ async function generateReport(){
     document.getElementById('loadingOverlay').classList.remove('active');
     document.getElementById('intakeSection').style.display='none';
     document.getElementById('reportSection').style.display='block';
-    // Reset to overview tab
     switchTab('overview', document.querySelector('.tab-btn'));
-    // Show/hide competitive tab
     const compTabEl = document.getElementById('compTab');
     if(compTabEl) compTabEl.style.display = data.competitive ? '' : 'none';
     if(data.competitive) buildCompetitive(data);
     window.scrollTo({top:0,behavior:'smooth'});
-  }catch(e){showErr('Error generating report: '+e.message);}
+  }catch(e){
+    document.getElementById('loadingOverlay').classList.remove('active');
+    document.getElementById('genBtn').disabled=false;
+    showErr('Error generating report: '+e.message);
+  }
 }
 
 // ── BUILD REPORT ──
@@ -1931,10 +2256,30 @@ document.getElementById('emailModal').addEventListener('click', function(e) {
 });
 
 function resetForm(){
-  document.getElementById('reportSection').style.display='none';
-  document.getElementById('intakeSection').style.display='block';
-  document.getElementById('genBtn').disabled=false;
-  document.getElementById('errMsg').style.display='none';
+  _confirmedPlace = null;
+  // Reset step 1
+  document.getElementById('step1Card').style.display = 'block';
+  document.getElementById('step2Card').style.display = 'none';
+  document.getElementById('searchResults').style.display = 'none';
+  document.getElementById('manualEntry').style.display = 'none';
+  document.getElementById('candidateCards').innerHTML = '';
+  document.getElementById('f_search').value = '';
+  document.getElementById('searchErrMsg').style.display = 'none';
+  // Reset step 2 fields
+  document.getElementById('f_website').value = '';
+  document.getElementById('f_emailList').value = '';
+  document.getElementById('f_targetKeywords').value = '';
+  document.getElementById('f_competitors').value = '';
+  document.getElementById('errMsg').style.display = 'none';
+  document.getElementById('genBtn').disabled = false;
+  // Reset niches
+  document.querySelectorAll('.niche-pill').forEach(p => p.classList.remove('active'));
+  document.querySelector('.niche-pill[data-niche="auto"]')?.classList.add('active');
+  selectedNiches = [];
+  updateNicheHint();
+  // Show intake, hide report
+  document.getElementById('intakeSection').style.display = '';
+  document.getElementById('reportSection').style.display = 'none';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 

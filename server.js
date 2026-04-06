@@ -109,8 +109,104 @@ function buildSuggestedKeywords(niche, city) {
 }
 
 // ─────────────────────────────────────────────
-// HEALTH CHECK
+// CONFIG — exposes public-safe keys to frontend
 // ─────────────────────────────────────────────
+app.get('/api/config', (req, res) => {
+  res.json({
+    googleApiKey: GOOGLE_API_KEY || '',
+  });
+});
+
+// ─────────────────────────────────────────────
+// PLACES SEARCH — returns multiple candidates
+// ─────────────────────────────────────────────
+app.post('/api/places-search', async (req, res) => {
+  const { query } = req.body;
+  if (!query) return res.status(400).json({ error: 'query required' });
+
+  try {
+    // Text search returns up to 5 candidates
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_API_KEY}`;
+    const searchRes = await fetch(searchUrl);
+    const searchData = await searchRes.json();
+
+    if (!searchData.results || searchData.results.length === 0) {
+      return res.json({ candidates: [] });
+    }
+
+    // Return top 5 with enough info to display selection cards
+    const candidates = searchData.results.slice(0, 5).map(r => ({
+      placeId:          r.place_id,
+      name:             r.name,
+      formattedAddress: r.formatted_address,
+      rating:           r.rating || null,
+      reviewCount:      r.user_ratings_total || 0,
+      types:            r.types || [],
+      businessStatus:   r.business_status || '',
+      lat:              r.geometry?.location?.lat || null,
+      lng:              r.geometry?.location?.lng || null,
+    }));
+
+    res.json({ candidates });
+
+  } catch (err) {
+    console.error('Places search error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────
+// PLACES DETAILS — get full details by place_id
+// ─────────────────────────────────────────────
+app.post('/api/places-details', async (req, res) => {
+  const { placeId } = req.body;
+  if (!placeId) return res.status(400).json({ error: 'placeId required' });
+
+  try {
+    const fields = [
+      'place_id', 'name', 'formatted_address', 'formatted_phone_number',
+      'rating', 'user_ratings_total', 'business_status', 'types',
+      'website', 'opening_hours', 'geometry', 'address_components'
+    ].join(',');
+
+    const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_API_KEY}`;
+    const detailRes = await fetch(detailUrl);
+    const detailData = await detailRes.json();
+
+    if (!detailData.result) {
+      return res.status(500).json({ error: 'Failed to get place details' });
+    }
+
+    const p = detailData.result;
+    const components = p.address_components || [];
+    const getComp  = (type) => { const c = components.find(c => c.types.includes(type)); return c ? c.long_name  : ''; };
+    const getShort = (type) => { const c = components.find(c => c.types.includes(type)); return c ? c.short_name : ''; };
+
+    res.json({
+      placeId,
+      name:             p.name,
+      formattedAddress: p.formatted_address,
+      phone:            p.formatted_phone_number || '',
+      street:           [getComp('street_number'), getComp('route')].filter(Boolean).join(' '),
+      suite:            getComp('subpremise') || '',
+      city:             getComp('locality') || getComp('sublocality'),
+      state:            getShort('administrative_area_level_1'),
+      zip:              getComp('postal_code'),
+      website:          p.website || '',
+      rating:           p.rating || null,
+      reviewCount:      p.user_ratings_total || 0,
+      businessStatus:   p.business_status || '',
+      types:            p.types || [],
+      hasHours:         !!(p.opening_hours),
+      lat:              p.geometry?.location?.lat || null,
+      lng:              p.geometry?.location?.lng || null,
+    });
+
+  } catch (err) {
+    console.error('Places details error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -1251,7 +1347,7 @@ app.post('/api/competitive-analysis', async (req, res) => {
 // MAIN REPORT — orchestrates all API calls
 // ─────────────────────────────────────────────
 app.post('/api/generate-report', async (req, res) => {
-  const { businessName, city, state, website, emailList, targetKeywords, manualCompetitors, runCompetitive, forcedNiches } = req.body;
+  const { businessName, city, state, website, emailList, targetKeywords, manualCompetitors, runCompetitive, forcedNiches, confirmedPlaceId, confirmedPlaceData } = req.body;
   if (!businessName || !city || !state) {
     return res.status(400).json({ error: 'businessName, city, state required' });
   }
@@ -1272,14 +1368,20 @@ app.post('/api/generate-report', async (req, res) => {
 
   try {
     // ── STEP 1: Google Places ──
-    try {
-      const placesRes = await fetch(`http://localhost:${PORT}/api/places`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName, city, state })
-      });
-      results.places = await placesRes.json();
-    } catch(e) { results.errors.push({ step: 'places', error: e.message }); }
+    // If the frontend already confirmed the place (two-step flow), skip the lookup
+    if (confirmedPlaceData && confirmedPlaceData.placeId) {
+      console.log(`[Places] Using confirmed place: ${confirmedPlaceData.name} (${confirmedPlaceData.placeId})`);
+      results.places = confirmedPlaceData;
+    } else {
+      try {
+        const placesRes = await fetch(`http://localhost:${PORT}/api/places`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ businessName, city, state })
+        });
+        results.places = await placesRes.json();
+      } catch(e) { results.errors.push({ step: 'places', error: e.message }); }
+    }
 
     const resolvedWebsite = website || results.places?.website || '';
     const resolvedPhone = results.places?.phone || '';
