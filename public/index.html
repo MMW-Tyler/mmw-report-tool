@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketing Analysis Report — Medical Marketing Whiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Barlow:wght@300;400;500;600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green: #28AB83; --green-mid: #1e9472; --green-light: #E5F5F0; --green-lighter: #f0faf7;
+  --dark: #323547; --dark-mid: #4a4e65; --white: #ffffff; --bg: #F7FAF9; --bg-card: #ffffff;
+  --border: #D9EDE7; --border-strong: #b8ddd4; --text-muted: #7a8a9a; --text-secondary: #4f5d6a;
+  --red: #e05454; --red-light: #fdf0f0; --amber: #c97d10; --amber-light: #fdf5e6; --amber-border: #f0d89a;
+}
+html { scroll-behavior: smooth; }
+body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--dark); min-height: 100vh; overflow-x: hidden; }
+body::before { content: ''; position: fixed; inset: 0; z-index: 0; background-image: radial-gradient(circle, #c5ddd7 1px, transparent 1px); background-size: 28px 28px; opacity: 0.4; pointer-events: none; }
+
+/* NAV */
+nav { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 64px; background: #323547; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.logo img { height: 36px; width: auto; display: block; }
+.nav-badge { display: flex; align-items: center; gap: 7px; font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; color: var(--green); background: rgba(40,171,131,0.12); border: 1px solid rgba(40,171,131,0.3); padding: 5px 14px; border-radius: 100px; }
+.nav-badge::before { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.35;transform:scale(0.7);} }
+
+/* LOADING */
+#loadingOverlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(247,250,249,0.96); backdrop-filter: blur(2px); flex-direction: column; align-items: center; justify-content: center; }
+#loadingOverlay.active { display: flex; }
+.loading-inner { text-align: center; max-width: 400px; padding: 0 24px; }
+.loading-spinner { width: 52px; height: 52px; border: 3px solid var(--border-strong); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 22px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-title { font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 800; color: var(--dark); margin-bottom: 6px; }
+.loading-sub { font-family: 'Lato', sans-serif; font-size: 14px; font-weight: 300; color: var(--text-muted); margin-bottom: 28px; line-height: 1.6; }
+.lsteps { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.lstep { display: flex; align-items: center; gap: 12px; font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text-muted); transition: color 0.3s; }
+.lstep.active { color: var(--dark); font-weight: 500; }
+.lstep.done { color: var(--green-mid); }
+.lstep-dot { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #e8eeec; }
+.lstep.active .lstep-dot { background: var(--amber-light); }
+.lstep.done .lstep-dot { background: var(--green-light); }
+.lstep-num { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.lstep.active .lstep-num { color: var(--amber); }
+.lstep-check { display: none; }
+.lstep.done .lstep-check { display: block; }
+.lstep.done .lstep-num { display: none; }
+
+/* INTAKE */
+#intakeSection { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 52px 36px 80px; }
+.eyebrow { display: inline-block; font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green-mid); background: var(--green-light); border: 1px solid var(--border-strong); padding: 5px 14px; border-radius: 100px; margin-bottom: 20px; opacity: 0; animation: fadeUp 0.5s ease 0.05s forwards; }
+.page-title { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 44px; line-height: 1.1; letter-spacing: -0.02em; color: var(--dark); margin-bottom: 12px; opacity: 0; animation: fadeUp 0.6s ease 0.15s forwards; }
+.page-title em { font-style: normal; color: var(--green); }
+.page-desc { font-family: 'Lato', sans-serif; font-size: 15px; font-weight: 300; color: var(--text-secondary); line-height: 1.75; margin-bottom: 36px; max-width: 500px; opacity: 0; animation: fadeUp 0.6s ease 0.25s forwards; }
+.intake-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 32px 36px; position: relative; z-index: 1; overflow: visible; opacity: 0; animation: fadeUp 0.6s ease 0.35s forwards; }
+.intake-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--green), var(--green-mid)); border-radius: 16px 16px 0 0; pointer-events: none; }
+.intake-card-title { font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+.intake-card-desc { font-family: 'Lato', sans-serif; font-size: 14px; font-weight: 300; color: var(--text-muted); line-height: 1.65; margin-bottom: 24px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.field-label { display: block; font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 7px; }
+input[type="text"], input[type="url"] { width: 100%; font-family: 'Barlow', sans-serif; font-size: 15px; font-weight: 400; color: var(--dark); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; outline: none; transition: border-color 0.18s, box-shadow 0.18s; }
+input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(40,171,131,0.1); }
+input::placeholder { color: #b8c8cc; }
+.btn-generate { display: inline-flex; align-items: center; gap: 9px; background: var(--green); color: #fff; font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.03em; padding: 13px 28px; border-radius: 10px; border: none; cursor: pointer; transition: background 0.18s, transform 0.15s, box-shadow 0.18s; margin-top: 8px; }
+.btn-generate:hover { background: var(--green-mid); transform: scale(1.02); box-shadow: 0 8px 28px rgba(40,171,131,0.3); }
+.btn-generate:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+.error-msg { display: none; margin-top: 14px; padding: 12px 16px; border-radius: 9px; background: var(--red-light); color: var(--red); border: 1px solid #f0c0c0; font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 500; }
+
+/* Niche pills */
+.niche-pill { font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 100px; border: 1px solid var(--border-strong); background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; user-select: none; }
+.niche-pill:hover { border-color: var(--green); color: var(--green-mid); }
+.niche-pill.active { background: var(--green); color: #fff; border-color: var(--green); }
+.niche-pill.active:hover { background: var(--green-mid); border-color: var(--green-mid); }
+.niche-pill[data-niche="auto"].active { background: var(--dark); border-color: var(--dark); }
+.niche-pill[data-niche="auto"]:hover { border-color: var(--dark); color: var(--dark); }
+
+/* REPORT */
+#reportSection { display: none; position: relative; z-index: 1; }
+.report-header { background: #323547; padding: 36px 48px 0; position: relative; overflow: hidden; }
+.report-header::before { content: ''; position: absolute; top: -60px; right: -60px; width: 260px; height: 260px; background: rgba(40,171,131,0.07); border-radius: 50%; }
+.report-header::after { content: ''; position: absolute; bottom: 0; right: 120px; width: 180px; height: 180px; background: rgba(40,171,131,0.04); border-radius: 50%; }
+.rh-inner { max-width: 1040px; margin: 0 auto; position: relative; z-index: 1; }
+.rh-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+.rh-eyebrow { font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green); margin-bottom: 8px; }
+.rh-name { font-family: 'Poppins', sans-serif; font-size: 31px; font-weight: 800; color: #fff; line-height: 1.1; margin-bottom: 5px; }
+.rh-meta { font-family: 'Lato', sans-serif; font-size: 14px; font-weight: 300; color: rgba(255,255,255,0.5); }
+.rh-date { font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.1em; color: var(--green); background: rgba(40,171,131,0.15); border: 1px solid rgba(40,171,131,0.3); padding: 5px 14px; border-radius: 100px; white-space: nowrap; align-self: flex-start; }
+.rh-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.btn-rh { display: inline-flex; align-items: center; gap: 7px; font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.07em; padding: 9px 18px; border-radius: 8px; cursor: pointer; transition: all 0.18s; background: transparent; color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.18); }
+.btn-rh:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: rgba(255,255,255,0.3); }
+
+/* TABS */
+.tab-bar { display: flex; gap: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 0 0 0 0; overflow-x: auto; }
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn { display: flex; align-items: center; gap: 7px; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; color: rgba(255,255,255,0.45); padding: 14px 20px; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.18s, border-color 0.18s; }
+.tab-btn:hover { color: rgba(255,255,255,0.75); }
+.tab-btn.active { color: #fff; border-bottom-color: var(--green); }
+.tab-btn svg { opacity: 0.6; }
+.tab-btn.active svg { opacity: 1; }
+
+/* TAB PANELS */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.report-body { max-width: 1040px; margin: 0 auto; padding: 32px 36px 80px; }
+
+/* Section divider */
+.sec-div { display: flex; align-items: center; gap: 14px; margin: 28px 0 18px; }
+.sec-div:first-child { margin-top: 0; }
+.sec-div-line { flex: 1; height: 1px; background: var(--border); }
+.sec-div-label { font-family: 'Barlow', sans-serif; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+
+/* Score grid */
+.score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.sc-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; position: relative; overflow: hidden; }
+.sc-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
+.sc-card.good::before { background: var(--green); }
+.sc-card.warn::before { background: #f0a500; }
+.sc-card.bad::before { background: var(--red); }
+.sc-label { font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+.sc-val { font-family: 'Poppins', sans-serif; font-size: 35px; font-weight: 800; line-height: 1; }
+.sc-card.good .sc-val { color: var(--green); }
+.sc-card.warn .sc-val { color: var(--amber); }
+.sc-card.bad .sc-val { color: var(--red); }
+.sc-sub { font-family: 'Lato', sans-serif; font-size: 14px; color: var(--text-muted); margin-top: 5px; font-weight: 300; }
+
+/* Category score mini cards */
+.cat-scores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.cat-sc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; text-align: center; }
+.cat-sc-label { font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.cat-sc-val { font-family: 'Poppins', sans-serif; font-size: 24px; font-weight: 800; }
+.cat-sc-val.good { color: var(--green); }
+.cat-sc-val.warn { color: var(--amber); }
+.cat-sc-val.bad { color: var(--red); }
+
+/* Layouts */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.col-6040 { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; }
+
+/* Section card */
+.sec-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; }
+.sec-card + .sec-card { margin-top: 14px; }
+.sc-title { font-family: 'Poppins', sans-serif; font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 14px; display: flex; align-items: center; gap: 9px; }
+.sc-icon { width: 28px; height: 28px; border-radius: 7px; background: var(--green-light); border: 1px solid var(--border-strong); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sc-icon svg { width: 13px; height: 13px; }
+
+/* Data rows */
+.dr { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-family: 'Lato', sans-serif; font-size: 15px; }
+.dr:last-child { border-bottom: none; }
+.dr-l { color: var(--text-secondary); font-weight: 300; }
+.dr-v { font-weight: 700; color: var(--dark); text-align: right; }
+.dr-v.good { color: var(--green-mid); }
+.dr-v.warn { color: var(--amber); }
+.dr-v.bad { color: var(--red); }
+
+/* Badges */
+.badge { display: inline-block; font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; }
+.bg { background: var(--green-light); color: var(--green-mid); border: 1px solid var(--border-strong); }
+.bw { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-border); }
+.bb { background: var(--red-light); color: var(--red); border: 1px solid #f0c0c0; }
+
+/* Bars */
+.bar { margin-bottom: 12px; }
+.bar:last-child { margin-bottom: 0; }
+.bar-row { display: flex; justify-content: space-between; font-family: 'Lato', sans-serif; font-size: 14px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 300; }
+.bar-n { font-weight: 700; }
+.bar-n.good { color: var(--green-mid); }
+.bar-n.warn { color: var(--amber); }
+.bar-n.bad { color: var(--red); }
+.bar-track { height: 6px; background: var(--green-light); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; }
+.bar-fill.good { background: var(--green); }
+.bar-fill.warn { background: #f0a500; }
+.bar-fill.bad { background: var(--red); }
+
+/* Keyword table */
+.kw-table { width: 100%; border-collapse: collapse; }
+.kw-table th { font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); padding: 0 8px 10px 0; text-align: left; border-bottom: 1px solid var(--border); }
+.kw-table th:last-child { text-align: right; padding-right: 0; }
+.kw-table td { font-family: 'Lato', sans-serif; font-size: 14px; color: var(--text-secondary); padding: 10px 8px 10px 0; border-bottom: 1px solid var(--border); font-weight: 300; vertical-align: middle; }
+.kw-table tr:last-child td { border-bottom: none; }
+.kw-table td:last-child { text-align: right; padding-right: 0; }
+.kw-pos { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; }
+.kw-pos.good { color: var(--green-mid); }
+.kw-pos.warn { color: var(--amber); }
+.kw-pos.bad { color: var(--red); }
+.kw-term { font-weight: 400; color: var(--dark); }
+.kw-url { font-size: 12px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.kw-diff { display: inline-block; width: 36px; height: 6px; border-radius: 3px; background: var(--green-light); vertical-align: middle; overflow: hidden; }
+.kw-diff-fill { height: 100%; border-radius: 3px; }
+
+/* Opp items */
+.opp { display: flex; align-items: flex-start; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); font-family: 'Lato', sans-serif; font-size: 14px; }
+.opp:last-child { border-bottom: none; }
+.opp-ico { width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; margin-top: 1px; background: var(--amber-light); border: 1px solid var(--amber-border); display: flex; align-items: center; justify-content: center; }
+.opp-ico svg { width: 11px; height: 11px; }
+.opp-t { font-weight: 400; color: var(--dark); margin-bottom: 2px; }
+.opp-s { font-size: 13px; color: var(--text-muted); font-weight: 300; }
+
+/* Diagnostic items */
+.diag { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-family: 'Lato', sans-serif; font-size: 14px; }
+.diag:last-child { border-bottom: none; }
+.diag-ico { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.diag-ico.bad { background: var(--red); }
+.diag-ico.warn { background: #f0a500; }
+.diag-t { font-weight: 400; color: var(--dark); margin-bottom: 2px; }
+.diag-d { font-size: 13px; color: var(--text-muted); font-weight: 300; line-height: 1.5; }
+
+/* Directories */
+.dir-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.di { display: flex; align-items: center; gap: 7px; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 400; padding: 7px 10px; border-radius: 7px; }
+.di.found { background: var(--green-light); color: var(--green-mid); border: 1px solid var(--border-strong); }
+.di.missing { background: #f7f8f7; color: var(--text-muted); border: 1px solid #e8eae9; }
+.di-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.di.found .di-dot { background: var(--green); }
+.di.missing .di-dot { background: #ccc; }
+
+/* NAP detail table */
+.nap-table { width: 100%; border-collapse: collapse; }
+.nap-table th { font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 0 8px 10px 0; border-bottom: 1px solid var(--border); text-align: left; }
+.nap-table td { font-family: 'Lato', sans-serif; font-size: 14px; padding: 10px 8px 10px 0; border-bottom: 1px solid var(--border); color: var(--text-secondary); font-weight: 300; vertical-align: top; }
+.nap-table tr:last-child td { border-bottom: none; }
+.nap-score { font-weight: 700; }
+.nap-score.good { color: var(--green-mid); }
+.nap-score.warn { color: var(--amber); }
+.nap-score.bad { color: var(--red); }
+
+/* AI boxes */
+.ai-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+.ai-lbl { font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.ai-txt { font-family: 'Lato', sans-serif; font-size: 15px; color: var(--text-secondary); line-height: 1.65; font-weight: 300; }
+.aeo-box { margin-top: 12px; padding: 14px 16px; background: var(--green-lighter); border: 1px solid var(--border-strong); border-radius: 10px; }
+.aeo-lbl { font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--green-mid); margin-bottom: 6px; }
+.aeo-txt { font-family: 'Lato', sans-serif; font-size: 14px; color: var(--text-secondary); line-height: 1.65; font-weight: 300; }
+
+/* Rec cards */
+.rec-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+.rec-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; opacity: 0.55; }
+.rec-card.recommended { border: 2px solid var(--green); background: linear-gradient(135deg, var(--green-lighter) 0%, var(--white) 60%); opacity: 1; }
+.rec-badge { display: inline-block; margin-bottom: 12px; font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 10px; border-radius: 100px; }
+.rec-card.recommended .rec-badge { background: var(--green); color: #fff; }
+.rec-card:not(.recommended) .rec-badge { background: #f0f2f1; color: var(--text-muted); border: 1px solid #e0e4e2; }
+.rec-name { font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 800; color: var(--dark); margin-bottom: 3px; }
+.rec-price { font-family: 'Barlow', sans-serif; font-size: 14px; color: var(--text-muted); margin-bottom: 12px; }
+.rec-reason-text { font-family: 'Lato', sans-serif; font-size: 14px; color: var(--text-secondary); line-height: 1.65; font-weight: 300; }
+.rec-fit { margin-top: 14px; }
+.rec-fit-lbl { font-family: 'Barlow', sans-serif; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+.rec-fit-track { height: 5px; background: var(--green-light); border-radius: 3px; overflow: hidden; }
+.rec-fit-fill { height: 100%; background: var(--green); border-radius: 3px; }
+.rec-main { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; }
+.rec-main-title { font-family: 'Poppins', sans-serif; font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 10px; display: flex; align-items: center; gap: 9px; }
+.rec-main-text { font-family: 'Lato', sans-serif; font-size: 15px; color: var(--text-secondary); line-height: 1.75; font-weight: 300; }
+
+/* Info callout */
+.info-callout { background: var(--green-lighter); border: 1px solid var(--border-strong); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; font-family: 'Lato', sans-serif; font-size: 14px; color: var(--text-secondary); line-height: 1.6; font-weight: 300; }
+.info-callout strong { font-weight: 700; color: var(--dark); }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 40px 20px; font-family: 'Lato', sans-serif; font-size: 15px; color: var(--text-muted); font-weight: 300; }
+
+/* Tooltips */
+.tip { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: help; }
+.tip-icon { width: 14px; height: 14px; border-radius: 50%; background: var(--border-strong); display: inline-flex; align-items: center; justify-content: center; font-family: 'Barlow', sans-serif; font-size: 9px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; transition: background 0.15s; }
+.tip:hover .tip-icon { background: var(--green); color: #fff; }
+.tip-box { display: none; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: 220px; background: var(--dark); color: #fff; font-family: 'Lato', sans-serif; font-size: 13px; font-weight: 300; line-height: 1.55; padding: 10px 12px; border-radius: 8px; z-index: 50; pointer-events: none; }
+.tip-box::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--dark); }
+.tip:hover .tip-box { display: block; }
+
+/* Present button highlight */
+.btn-present { background: rgba(40,171,131,0.15) !important; color: var(--green) !important; border-color: rgba(40,171,131,0.4) !important; }
+.btn-present:hover { background: rgba(40,171,131,0.28) !important; color: #fff !important; }
+/* Download DOCX button */
+.btn-docx { background: rgba(255,255,255,0.08) !important; color: rgba(255,255,255,0.75) !important; }
+.btn-docx:hover { background: rgba(255,255,255,0.15) !important; color: #fff !important; }
+.btn-docx.loading { opacity: 0.6; cursor: not-allowed; }
+
+/* ── PRESENTATION MODE — LIGHT THEME ── */
+#presentationOverlay {
+  display: none; position: fixed; inset: 0; z-index: 9000;
+  background: #F7FAF9; flex-direction: column; overflow: hidden;
+  font-family: 'Barlow', sans-serif; height: 100vh; width: 100vw;
+}
+#presentationOverlay.active { display: flex; }
+
+.pres-stage { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; min-height: 0; }
+
+.pres-slide { display: none !important; flex: 1; flex-direction: column; padding: 0; position: relative; overflow: hidden; animation: slideIn 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+.pres-slide.active { display: flex !important; }
+@keyframes slideIn { from{opacity:0;transform:translateX(24px);}to{opacity:1;transform:none;} }
+
+/* Cover — keep dark with green gradient */
+.pres-cover { background: var(--dark); justify-content: center; align-items: center; text-align: center; }
+.pres-cover::before { content:''; position:absolute; inset:0; background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(40,171,131,0.14) 0%, transparent 70%); pointer-events:none; }
+
+/* Content slides — light */
+.pres-content { display: flex; flex-direction: column; height: 100%; background: #F7FAF9; }
+
+/* Top bar */
+.pres-topbar { background: var(--dark); padding: 12px 48px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; box-shadow: 0 2px 12px rgba(50,53,71,0.12); }
+.pres-topbar-logo { height: 26px; width: auto; display: block; }
+.pres-topbar-client { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 700; color: #fff; }
+.pres-topbar-section { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--green); background: rgba(40,171,131,0.15); border: 1px solid rgba(40,171,131,0.3); padding: 4px 12px; border-radius: 100px; }
+
+/* Slide body */
+.pres-body { flex: 1; display: flex; flex-direction: column; padding: 28px 48px 20px; overflow-y: auto; min-height: 0; }
+.pres-body::-webkit-scrollbar { width: 4px; }
+.pres-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+/* Headings */
+.pres-section-title { font-family: 'Poppins', sans-serif; font-size: 26px; font-weight: 800; color: var(--dark); letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1.15; }
+.pres-section-title em { color: var(--green); font-style: normal; }
+.pres-section-sub { font-size: 13px; font-weight: 400; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+
+/* Cover text */
+.pres-cover-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: var(--green); background: rgba(40,171,131,0.12); border: 1px solid rgba(40,171,131,0.25); padding: 6px 20px; border-radius: 100px; margin-bottom: 24px; display: inline-block; }
+.pres-cover-name { font-family: 'Poppins', sans-serif; font-size: 52px; font-weight: 800; color: #fff; letter-spacing: -0.03em; line-height: 1; margin-bottom: 12px; }
+.pres-cover-sub { font-size: 17px; color: rgba(255,255,255,0.45); font-weight: 300; margin-bottom: 32px; }
+.pres-cover-divider { width: 64px; height: 3px; background: linear-gradient(90deg, var(--green), rgba(40,171,131,0.2)); border-radius: 2px; margin: 0 auto 32px; }
+.pres-cover-date { font-size: 11px; letter-spacing: 0.12em; color: rgba(255,255,255,0.3); text-transform: uppercase; }
+.pres-cover-logo { height: 42px; width: auto; margin-bottom: 28px; }
+
+/* Metric cards — light */
+.pres-metric-grid { display: grid; gap: 12px; }
+.pres-metric-grid.cols-3 { grid-template-columns: repeat(3,1fr); }
+.pres-metric-grid.cols-2 { grid-template-columns: repeat(2,1fr); }
+.pres-metric-grid.cols-4 { grid-template-columns: repeat(4,1fr); }
+.pres-metric-card {
+  background: #fff; border-radius: 12px; padding: 18px 18px 16px;
+  border: 1px solid var(--border); border-top: 4px solid var(--border-strong);
+  box-shadow: 0 2px 8px rgba(50,53,71,0.06); transition: transform 0.15s, box-shadow 0.15s;
+  position: relative; overflow: hidden;
+}
+.pres-metric-card.clickable { cursor: pointer; }
+.pres-metric-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(50,53,71,0.12); }
+.pres-metric-card.clickable::after { content:'Click to explore'; position:absolute; bottom:8px; right:10px; font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--green); opacity:0; transition:opacity 0.2s; }
+.pres-metric-card.clickable:hover::after { opacity:1; }
+.pres-metric-card.good { border-top-color: var(--green); }
+.pres-metric-card.warn { border-top-color: var(--amber); }
+.pres-metric-card.bad  { border-top-color: var(--red); }
+.pres-metric-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.pres-metric-val { font-family: 'Poppins', sans-serif; font-size: 36px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.pres-metric-card.good .pres-metric-val { color: var(--green); }
+.pres-metric-card.warn .pres-metric-val { color: var(--amber); }
+.pres-metric-card.bad  .pres-metric-val { color: var(--red); }
+.pres-metric-card:not(.good):not(.warn):not(.bad) .pres-metric-val { color: var(--dark); }
+.pres-metric-sub { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-bottom: 4px; }
+.pres-metric-explain { font-size: 11px; color: var(--text-secondary); font-style: italic; line-height: 1.4; }
+
+/* Light card */
+.pres-card { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(50,53,71,0.05); }
+.pres-card-title { font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; color: var(--dark); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.pres-card-icon { width: 24px; height: 24px; border-radius: 6px; background: var(--green-light); border: 1px solid var(--border-strong); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pres-card-icon svg { width: 12px; height: 12px; }
+
+/* Data rows — light */
+.pres-dr { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.pres-dr:last-child { border-bottom: none; }
+.pres-dr-l { color: var(--text-secondary); font-weight: 400; }
+.pres-dr-v { font-weight: 700; color: var(--dark); text-align: right; }
+.pres-dr-v.good { color: var(--green); }
+.pres-dr-v.warn { color: var(--amber); }
+.pres-dr-v.bad  { color: var(--red); }
+
+/* Two/three col grid */
+.pres-two   { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pres-three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* Callout — light */
+.pres-callout { background: var(--green-lighter); border: 1px solid var(--border-strong); border-radius: 10px; padding: 14px 18px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.pres-callout strong { color: var(--green); font-weight: 700; }
+
+/* Journey steps — light */
+.pres-journey { display: flex; gap: 0; margin-top: 0; flex: 1; }
+.pres-journey-step { flex: 1; padding: 18px 14px; background: #fff; border: 1px solid var(--border); border-right: none; display: flex; flex-direction: column; }
+.pres-journey-step:first-child { border-radius: 12px 0 0 12px; }
+.pres-journey-step:last-child  { border-right: 1px solid var(--border); border-radius: 0 12px 12px 0; }
+.pres-journey-step.highlight   { background: var(--green-light); border-color: var(--border-strong); }
+.pres-journey-num   { font-family: 'Poppins', sans-serif; font-size: 24px; font-weight: 800; color: var(--border-strong); margin-bottom: 6px; line-height: 1; }
+.pres-journey-step.highlight .pres-journey-num  { color: var(--green); }
+.pres-journey-title { font-size: 11px; font-weight: 700; color: var(--dark); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
+.pres-journey-step.highlight .pres-journey-title { color: var(--green); }
+.pres-journey-desc  { font-size: 12px; color: var(--text-muted); line-height: 1.5; flex: 1; }
+
+/* Ranking factors */
+.pres-factor { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.pres-factor:last-child { margin-bottom: 0; }
+.pres-factor-label { font-size: 12px; color: var(--text-secondary); min-width: 190px; }
+.pres-factor-bar   { flex: 1; height: 7px; background: var(--green-light); border-radius: 4px; overflow: hidden; }
+.pres-factor-fill  { height: 100%; border-radius: 4px; background: var(--green); }
+.pres-factor-pct   { font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 800; color: var(--dark); min-width: 44px; text-align: right; }
+
+/* Directory grid — light */
+.pres-dir-wrap { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+.pres-di { display: flex; align-items: center; gap: 7px; font-size: 12px; padding: 7px 10px; border-radius: 7px; }
+.pres-di.found   { background: var(--green-light); color: var(--text-secondary); border: 1px solid var(--border-strong); }
+.pres-di.missing { background: #fdf0f0; color: var(--red); border: 1px solid #f0c0c0; }
+.pres-di-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.pres-di.found   .pres-di-dot { background: var(--green); }
+.pres-di.missing .pres-di-dot { background: var(--red); }
+
+/* Recommendation cards — light */
+.pres-rec-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 16px; }
+.pres-rec-card { border-radius: 12px; padding: 20px; border: 1px solid var(--border); background: #fff; opacity: 0.65; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(50,53,71,0.05); }
+.pres-rec-card:hover { opacity: 0.85; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(50,53,71,0.1); }
+.pres-rec-card.recommended { border: 2px solid var(--green); background: linear-gradient(135deg, var(--green-lighter) 0%, #fff 60%); opacity: 1; }
+.pres-rec-badge { display: inline-block; margin-bottom: 8px; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 10px; border-radius: 100px; }
+.pres-rec-card.recommended .pres-rec-badge { background: var(--green); color: #fff; }
+.pres-rec-card:not(.recommended) .pres-rec-badge { background: #f0f2f1; color: var(--text-muted); border: 1px solid var(--border); }
+.pres-rec-name  { font-family: 'Poppins', sans-serif; font-size: 20px; font-weight: 800; color: var(--dark); margin-bottom: 2px; }
+.pres-rec-price { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+.pres-rec-text  { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+.pres-rec-hint  { font-size: 10px; color: var(--green); margin-top: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* Nav footer — light */
+.pres-nav { background: #fff; border-top: 1px solid var(--border); padding: 12px 48px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; box-shadow: 0 -2px 8px rgba(50,53,71,0.05); }
+.pres-nav-btns { display: flex; gap: 8px; }
+.pres-nav-btn { display: inline-flex; align-items: center; gap: 6px; background: #f0f2f1; border: 1px solid var(--border); color: var(--text-secondary); font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 500; padding: 9px 20px; border-radius: 8px; cursor: pointer; transition: all 0.18s; }
+.pres-nav-btn:hover { background: var(--border); color: var(--dark); }
+.pres-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pres-nav-btn.primary { background: var(--green); border-color: var(--green); color: #fff; }
+.pres-nav-btn.primary:hover { background: var(--green-mid); }
+
+.pres-progress { display: flex; align-items: center; gap: 7px; }
+.pres-prog-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border-strong); cursor: pointer; transition: all 0.2s; }
+.pres-prog-dot.active { background: var(--green); width: 20px; border-radius: 3px; }
+
+.pres-close-btn { background: #f0f2f1; border: 1px solid var(--border); color: var(--text-muted); font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 500; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.18s; display: flex; align-items: center; gap: 6px; }
+.pres-close-btn:hover { background: #fdf0f0; color: var(--red); border-color: #f0c0c0; }
+
+/* OVERLAY MODAL — for keyword table, program images */
+.pres-overlay-modal {
+  display: none; position: absolute; inset: 0; z-index: 100;
+  background: rgba(50,53,71,0.55); backdrop-filter: blur(3px);
+  align-items: center; justify-content: center; padding: 32px;
+  animation: fadeIn 0.2s ease both;
+}
+.pres-overlay-modal.open { display: flex; }
+@keyframes fadeIn { from{opacity:0;}to{opacity:1;} }
+.pres-overlay-inner {
+  background: #fff; border-radius: 16px; padding: 28px 32px;
+  max-width: 820px; width: 100%; max-height: 80vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(50,53,71,0.25);
+  animation: slideUp 0.25s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;} }
+.pres-overlay-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.pres-overlay-title { font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 800; color: var(--dark); }
+.pres-overlay-close { width: 32px; height: 32px; border-radius: 8px; background: #f0f2f1; border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--text-muted); transition: all 0.15s; }
+.pres-overlay-close:hover { background: #fdf0f0; color: var(--red); }
+
+/* Progress bars */
+.pres-stat-bar { margin-bottom: 12px; }
+.pres-stat-bar:last-child { margin-bottom: 0; }
+.pres-stat-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.pres-stat-n { font-weight: 700; }
+.pres-stat-n.good { color: var(--green); }
+.pres-stat-n.warn { color: var(--amber); }
+.pres-stat-n.bad  { color: var(--red); }
+.pres-stat-track { height: 6px; background: var(--green-light); border-radius: 4px; overflow: hidden; }
+.pres-stat-fill  { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.22,1,0.36,1); }
+.pres-stat-fill.good { background: var(--green); }
+.pres-stat-fill.warn { background: var(--amber); }
+.pres-stat-fill.bad  { background: var(--red); }
+
+/* Keyword table in overlay */
+.pres-kw-table { width: 100%; border-collapse: collapse; }
+.pres-kw-table th { font-family: 'Barlow', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); padding: 0 8px 10px 0; border-bottom: 2px solid var(--green); text-align: left; }
+.pres-kw-table td { font-size: 13px; color: var(--text-secondary); padding: 10px 8px 10px 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.pres-kw-table tr:last-child td { border-bottom: none; }
+.pres-kw-pos { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; padding: 2px 10px; border-radius: 6px; display: inline-block; }
+.pres-kw-pos.good { background: var(--green-light); color: var(--green); }
+.pres-kw-pos.warn { background: var(--amber-light); color: var(--amber); }
+.pres-kw-pos.bad  { background: var(--red-light); color: var(--red); }
+
+/* Opp items */
+.pres-opp { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.pres-opp:last-child { border-bottom: none; }
+.pres-opp-badge { min-width: 52px; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; text-align: center; flex-shrink: 0; }
+.pres-opp-badge.high   { background: var(--red-light); color: var(--red); border: 1px solid #f0c0c0; }
+.pres-opp-badge.medium { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-border); }
+.pres-opp-badge.low    { background: var(--green-light); color: var(--green); border: 1px solid var(--border-strong); }
+.pres-opp-t { font-weight: 600; color: var(--dark); font-size: 13px; margin-bottom: 2px; }
+.pres-opp-s { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+/* AI query cards */
+.pres-ai-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; border-left-width: 4px; }
+.pres-ai-box.not-found { border-left-color: var(--red); }
+.pres-ai-box.found     { border-left-color: var(--green); }
+.pres-ai-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.pres-ai-txt { font-size: 13px; color: var(--text-secondary); line-height: 1.65; }
+.pres-ai-result { font-size: 12px; font-weight: 700; margin-top: 8px; }
+.pres-ai-result.not-found { color: var(--red); }
+.pres-ai-result.found     { color: var(--green); }
+
+
+/* Footer */
+footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; background: var(--white); }
+.footer-left, .footer-right { font-family: 'Lato', sans-serif; font-size: 12px; color: var(--text-muted); letter-spacing: 0.05em; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);} }
+
+/* RESPONSIVE */
+@media (max-width:900px) {
+  .score-grid,.two-col,.three-col,.rec-grid,.col-6040,.cat-scores{grid-template-columns:1fr 1fr;}
+  .report-body{padding:24px 20px 60px;}
+  .report-header{padding:28px 24px 0;}
+  .tab-btn{padding:12px 14px;font-size:11px;}
+}
+@media (max-width:560px) {
+  nav{padding:0 20px;} #intakeSection{padding:32px 16px 60px;} .intake-card{padding:24px 20px;}
+  .form-row{grid-template-columns:1fr;} .page-title{font-size:32px;}
+  .score-grid,.cat-scores{grid-template-columns:1fr 1fr;} .dir-grid{grid-template-columns:1fr 1fr;}
+  footer{padding:18px 20px;flex-direction:column;gap:6px;} .three-col,.rec-grid{grid-template-columns:1fr;}
+}
+@media print {
+  /* ── HIDE EVERYTHING EXCEPT REPORT ── */
+  nav, #intakeSection, footer, #loadingOverlay, .rh-actions, .tab-bar,
+  body::before, #presentationOverlay, .btn-present, .btn-docx { display: none !important; }
+
+  /* ── PAGE SETUP ── */
+  @page { size: letter; margin: 0; }
+  html, body { background: white !important; margin: 0; padding: 0; }
+  body::before { display: none !important; }
+
+  /* ── REPORT CONTAINER ── */
+  #reportSection { display: block !important; }
+  .tab-panel { display: block !important; page-break-after: always; }
+  .tab-panel:last-child { page-break-after: avoid; }
+
+  /* ── MMW HEADER ON EVERY PAGE ── */
+  #reportSection::before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 90px;
+    background: #323547;
+    background-image: url('https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b629a78e55077a091d0a.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── REPORT HEADER (client name bar) ── */
+  .report-header {
+    background: #323547 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 20px 40px !important;
+    page-break-after: avoid;
+  }
+  .rh-eyebrow { color: #28AB83 !important; font-size: 10px !important; }
+  .rh-name { font-size: 22px !important; color: #ffffff !important; }
+  .rh-meta, .rh-date { font-size: 11px !important; }
+
+  /* ── SECTION HEADINGS ── */
+  .sec-div-label {
+    font-size: 9px !important;
+    color: #28AB83 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── SCORE CARDS ── */
+  .score-grid { grid-template-columns: repeat(4,1fr) !important; gap: 8px !important; }
+  .sc-card {
+    border-radius: 8px !important;
+    padding: 12px 14px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    break-inside: avoid;
+  }
+  .sc-card.good::before { background: #28AB83 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sc-card.warn::before { background: #C97D10 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sc-card.bad::before  { background: #E05454 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sc-val { font-size: 26px !important; }
+  .sc-label { font-size: 9px !important; }
+  .sc-sub { font-size: 10px !important; }
+
+  /* ── SECTION CARDS ── */
+  .sec-card {
+    border: 1px solid #D9EDE7 !important;
+    border-radius: 8px !important;
+    padding: 14px 16px !important;
+    break-inside: avoid;
+    margin-bottom: 10px !important;
+  }
+  .sc-title { font-size: 13px !important; margin-bottom: 10px !important; }
+  .sc-icon { width: 22px !important; height: 22px !important; }
+
+  /* ── DATA ROWS ── */
+  .dr { font-size: 11px !important; padding: 6px 0 !important; }
+  .dr-v.good { color: #28AB83 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .dr-v.warn { color: #C97D10 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .dr-v.bad  { color: #E05454 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* ── LAYOUTS ── */
+  .two-col, .col-6040 { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .three-col { grid-template-columns: repeat(3,1fr) !important; gap: 10px !important; }
+  .cat-scores { grid-template-columns: repeat(4,1fr) !important; gap: 8px !important; }
+
+  /* ── CAT SCORE MINI CARDS ── */
+  .cat-sc { padding: 10px 12px !important; break-inside: avoid; }
+  .cat-sc-val { font-size: 18px !important; }
+  .cat-sc-label { font-size: 9px !important; }
+  .cat-sc-val.good { color: #28AB83 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cat-sc-val.warn { color: #C97D10 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cat-sc-val.bad  { color: #E05454 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* ── KEYWORD TABLE ── */
+  .kw-table th { font-size: 9px !important; padding-bottom: 6px !important; }
+  .kw-table td { font-size: 10px !important; padding: 6px 8px 6px 0 !important; }
+  .kw-pos { font-size: 12px !important; }
+  .kw-pos.good { color: #28AB83 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .kw-pos.warn { color: #C97D10 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .kw-pos.bad  { color: #E05454 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* ── DIRECTORY GRID ── */
+  .dir-grid { grid-template-columns: repeat(3,1fr) !important; gap: 4px !important; }
+  .di { font-size: 10px !important; padding: 5px 8px !important; }
+  .di.found { background: #E5F5F0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .di.missing { background: #f7f8f7 !important; }
+
+  /* ── BADGES ── */
+  .bg { background: #E5F5F0 !important; color: #1e9472 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bw { background: #FDF5E6 !important; color: #C97D10 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bb { background: #FDF0F0 !important; color: #E05454 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* ── AI BOXES ── */
+  .ai-box { background: #F7FAF9 !important; border: 1px solid #D9EDE7 !important; font-size: 11px !important; padding: 10px 12px !important; break-inside: avoid; }
+  .aeo-box { background: #E5F5F0 !important; border: 1px solid #D9EDE7 !important; break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* ── RECOMMENDATION CARDS ── */
+  .rec-grid { grid-template-columns: repeat(3,1fr) !important; gap: 10px !important; }
+  .rec-card { break-inside: avoid; padding: 16px !important; }
+  .rec-card.recommended {
+    border: 2px solid #28AB83 !important;
+    background: linear-gradient(135deg, #E5F5F0 0%, #fff 60%) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .rec-card.recommended .rec-badge { background: #28AB83 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rec-name { font-size: 16px !important; }
+  .rec-price { font-size: 11px !important; }
+  .rec-reason-text { font-size: 10px !important; }
+
+  /* ── INFO CALLOUT ── */
+  .info-callout { background: #E5F5F0 !important; border: 1px solid #D9EDE7 !important; font-size: 10px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; break-inside: avoid; }
+
+  /* ── BARS ── */
+  .bar-fill.good { background: #28AB83 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bar-fill.warn { background: #C97D10 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bar-fill.bad  { background: #E05454 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bar-track { background: #E5F5F0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* ── REPORT BODY PADDING ── */
+  .report-body { padding: 20px 32px 40px !important; max-width: 100% !important; }
+
+  /* ── OPPORTUNTIES / DIAGS ── */
+  .opp { font-size: 11px !important; padding: 8px 0 !important; break-inside: avoid; }
+  .diag { font-size: 11px !important; padding: 7px 0 !important; break-inside: avoid; }
+  .opp-ico { background: #FDF5E6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingOverlay">
+  <div class="loading-inner">
+    <div class="loading-spinner"></div>
+    <div class="loading-title">Generating Report</div>
+    <div class="loading-sub">Pulling live data from multiple sources.<br>This takes about 30–45 seconds.</div>
+    <div class="lsteps">
+      <div class="lstep" id="ls1"><div class="lstep-dot"><span class="lstep-num">1</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Looking up business on Google Places</div>
+      <div class="lstep" id="ls2"><div class="lstep-dot"><span class="lstep-num">2</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Reading website &amp; extracting services</div>
+      <div class="lstep" id="ls3"><div class="lstep-dot"><span class="lstep-num">3</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Running citation &amp; presence scan</div>
+      <div class="lstep" id="ls4"><div class="lstep-dot"><span class="lstep-num">4</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Checking website performance</div>
+      <div class="lstep" id="ls5"><div class="lstep-dot"><span class="lstep-num">5</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Pulling keyword rankings &amp; backlinks</div>
+      <div class="lstep" id="ls6"><div class="lstep-dot"><span class="lstep-num">6</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Analyzing AI &amp; ChatGPT visibility</div>
+      <div class="lstep" id="ls7"><div class="lstep-dot"><span class="lstep-num">7</span><svg class="lstep-check" width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#28AB83" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>Building program recommendation</div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo"><img src="https://i0.wp.com/medicalmarketingwhiz.com/wp-content/uploads/2025/01/Medical-Marketing-Whiz-LogoWhite.png?w=1072&ssl=1" alt="Medical Marketing Whiz" height="36"></div>
+  <div class="nav-badge">Marketing Analysis Tool</div>
+</nav>
+
+<!-- INTAKE -->
+<div id="intakeSection">
+  <div class="eyebrow">Internal Tool · MMW Team Only</div>
+  <h1 class="page-title">Marketing <em>Analysis</em> Report</h1>
+  <p class="page-desc">Enter the prospect's name, location, and website. The tool auto-pulls their full digital presence — citations, SEO, backlinks, AI visibility — and builds a program recommendation ready for the sales call.</p>
+  <div class="intake-card">
+    <div class="intake-card-title">Prospect Details</div>
+    <p class="intake-card-desc">Three fields is all you need. Address, phone, services, and categories are pulled automatically from Google and the prospect's website.</p>
+    <!-- Niche Selector -->
+    <div style="margin-bottom:20px;">
+      <label class="field-label">Clinic Niche — Keyword Set <span style="font-weight:300;letter-spacing:0;text-transform:none;font-size:10px;">(optional — auto-detected if not selected)</span></label>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;" id="nichePills">
+        <button type="button" class="niche-pill active" data-niche="auto" onclick="toggleNiche(this)">Auto-detect</button>
+        <button type="button" class="niche-pill" data-niche="medical_spa" onclick="toggleNiche(this)">Medical Spa</button>
+        <button type="button" class="niche-pill" data-niche="aesthetics_skincare" onclick="toggleNiche(this)">Aesthetics / Skin Care</button>
+        <button type="button" class="niche-pill" data-niche="hormone_therapy" onclick="toggleNiche(this)">Hormone Therapy</button>
+        <button type="button" class="niche-pill" data-niche="weight_loss" onclick="toggleNiche(this)">Weight Loss</button>
+        <button type="button" class="niche-pill" data-niche="womens_health" onclick="toggleNiche(this)">Women's Health</button>
+        <button type="button" class="niche-pill" data-niche="chiropractic" onclick="toggleNiche(this)">Chiropractic</button>
+        <button type="button" class="niche-pill" data-niche="dermatology" onclick="toggleNiche(this)">Dermatology</button>
+        <button type="button" class="niche-pill" data-niche="concierge_medicine" onclick="toggleNiche(this)">Concierge Medicine</button>
+        <button type="button" class="niche-pill" data-niche="integrative_wellness" onclick="toggleNiche(this)">Integrative / Wellness</button>
+      </div>
+      <div style="font-family:'Lato',sans-serif;font-size:12px;font-weight:300;color:var(--text-muted);margin-top:8px;line-height:1.5;" id="nicheHint">
+        Keywords will be auto-suggested based on the clinic's detected specialty. Select up to 3 niches manually to override — keyword sets are merged and searched locally.
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label class="field-label">Business Name *</label><input type="text" id="f_name" placeholder="e.g. Advanced Beauty Lab" /></div>
+      <div><label class="field-label">Website URL</label><input type="url" id="f_website" placeholder="https://www.example.com" /></div>
+    </div>
+    <div class="form-row">
+      <div><label class="field-label">City *</label><input type="text" id="f_city" placeholder="e.g. Newton" /></div>
+      <div><label class="field-label">State *</label><input type="text" id="f_state" placeholder="e.g. MA" maxlength="2" /></div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="field-label">Email List Size <span style="font-weight:300;letter-spacing:0;text-transform:none;font-size:10px;">(optional)</span></label>
+        <input type="text" id="f_emailList" placeholder="e.g. 450 contacts" />
+      </div>
+      <div>
+        <label class="field-label">&nbsp;</label>
+        <div style="font-family:'Lato',sans-serif;font-size:12px;font-weight:300;color:var(--text-muted);padding:12px 0;line-height:1.5;">Used to assess email nurture opportunity and list growth strategy.</div>
+      </div>
+    </div>
+    <!-- Keywords & Competitors — always visible -->
+    <div style="margin-bottom:16px;position:relative;z-index:2;">
+      <div style="padding:14px 16px;background:var(--green-lighter);border:1px solid var(--border-strong);border-radius:9px;">
+        <div style="margin-bottom:12px;">
+          <label class="field-label">Target Keywords <span style="font-weight:300;letter-spacing:0;text-transform:none;font-size:10px;">(optional — leave blank to auto-suggest)</span></label>
+          <input type="text" id="f_targetKeywords" placeholder="e.g. skin care Newton MA, chemical peel Newton, botox Newton" />
+          <div style="font-family:'Lato',sans-serif;font-size:12px;font-weight:300;color:var(--text-muted);margin-top:6px;line-height:1.5;">
+            If left blank, keywords will be auto-suggested based on the clinic's detected specialty.
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Known Competitors <span style="font-weight:300;letter-spacing:0;text-transform:none;font-size:10px;">(optional — auto-detected if blank)</span></label>
+          <input type="text" id="f_competitors" placeholder="e.g. competitorone.com, competitortwo.com" />
+        </div>
+      </div>
+    </div>
+    <button class="btn-generate" id="genBtn" onclick="generateReport()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Generate Report
+    </button>
+    <div class="error-msg" id="errMsg"></div>
+  </div>
+</div>
+
+<!-- REPORT -->
+<div id="reportSection">
+  <div class="report-header">
+    <div class="rh-inner">
+      <div class="rh-top">
+        <div>
+          <div class="rh-eyebrow">Marketing Analysis Report · Medical Marketing Whiz</div>
+          <div class="rh-name" id="r_name">—</div>
+          <div class="rh-meta" id="r_meta">—</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+          <div class="rh-date" id="r_date">—</div>
+        </div>
+      </div>
+      <div class="rh-actions">
+        <button class="btn-rh" onclick="openEmailModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Report
+        </button>
+        <button class="btn-rh btn-present" onclick="startPresentation()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="12" cy="10" r="2"/><path d="M12 8V6"/></svg>
+          Present
+        </button>
+        <button class="btn-rh btn-docx" id="btnDocx" onclick="downloadDocx()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          Download Report
+        </button>
+        <button class="btn-rh" onclick="window.print()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Simplified PDF
+        </button>
+        <button class="btn-rh" onclick="resetForm()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.36"/></svg>
+          New Report
+        </button>
+      </div>
+
+      <!-- TAB BAR -->
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('overview',this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Overview
+        </button>
+        <button class="tab-btn" onclick="switchTab('website',this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Website &amp; SEO
+        </button>
+        <button class="tab-btn" onclick="switchTab('keywords',this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Keywords &amp; Backlinks
+        </button>
+        <button class="tab-btn" onclick="switchTab('local',this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Local &amp; Citations
+        </button>
+        <button class="tab-btn" onclick="switchTab('ai',this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          AI Visibility
+        </button>
+        <button class="tab-btn" onclick="switchTab('recommendation',this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Recommendation
+        </button>
+        <button class="tab-btn" id="compTab" onclick="switchTab('competitive',this)" style="display:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="0" y1="20" x2="24" y2="20"/></svg>
+          Competitive
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: OVERVIEW ── -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="report-body">
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Overall Scores</div><div class="sec-div-line"></div></div>
+      <div class="score-grid" id="r_scores"></div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Business Snapshot</div><div class="sec-div-line"></div></div>
+      <div class="two-col">
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>Business Info</div>
+          <div id="r_bizInfo"></div>
+        </div>
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>At a Glance</div>
+          <div id="r_glance"></div>
+        </div>
+      </div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Website Performance</div><div class="sec-div-line"></div></div>
+      <div class="two-col">
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>PageSpeed — Mobile</div>
+          <div id="r_ovMobile"></div>
+        </div>
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>PageSpeed — Desktop</div>
+          <div id="r_ovDesktop"></div>
+        </div>
+      </div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Local Presence</div><div class="sec-div-line"></div></div>
+      <div class="two-col">
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>Google Business Profile &amp; Reviews</div>
+          <div id="r_ovGbp"></div>
+        </div>
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>Citation &amp; Directory Summary</div>
+          <div id="r_ovDirs"></div>
+        </div>
+      </div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Top Opportunities</div><div class="sec-div-line"></div></div>
+      <div class="sec-card" id="r_topOpps"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: WEBSITE & SEO ── -->
+  <div class="tab-panel" id="tab-website">
+    <div class="report-body">
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Category Scores</div><div class="sec-div-line"></div></div>
+      <div class="cat-scores" id="r_catScores"></div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Core Web Vitals</div><div class="sec-div-line"></div></div>
+      <div class="two-col">
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>PageSpeed — Mobile</div>
+          <div id="r_psMobile"></div>
+        </div>
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>PageSpeed — Desktop</div>
+          <div id="r_psDesktop"></div>
+        </div>
+      </div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Optimization Opportunities</div><div class="sec-div-line"></div></div>
+      <div class="sec-card" id="r_opps"></div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Diagnostics &amp; Failed Audits</div><div class="sec-div-line"></div></div>
+      <div class="sec-card" id="r_diags"></div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Website Audit — SEO &amp; Content</div><div class="sec-div-line"></div></div>
+      <div id="r_websiteAudit"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: KEYWORDS & BACKLINKS ── -->
+  <div class="tab-panel" id="tab-keywords">
+    <div class="report-body">
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Domain Authority &amp; Backlinks</div><div class="sec-div-line"></div></div>
+      <div class="two-col">
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>Link Profile</div>
+          <div id="r_backlinks"></div>
+        </div>
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>Ranking Distribution</div>
+          <div id="r_rankDist"></div>
+        </div>
+      </div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Keyword Rankings</div><div class="sec-div-line"></div></div>
+      <div class="sec-card">
+        <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>All Tracked Keywords<span id="r_kwBadge" style="margin-left:auto;"></span></div>
+        <div id="r_keywords"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: LOCAL & CITATIONS ── -->
+  <div class="tab-panel" id="tab-local">
+    <div class="report-body">
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Google Business Profile</div><div class="sec-div-line"></div></div>
+      <div class="two-col">
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>GBP &amp; Reviews</div>
+          <div id="r_gbp"></div>
+        </div>
+        <div class="sec-card">
+          <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>Voice Search Readiness</div>
+          <div id="r_voice"></div>
+        </div>
+      </div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Directory Presence</div><div class="sec-div-line"></div></div>
+      <div class="sec-card">
+        <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>Directory Grid<span id="r_dirBadge" style="margin-left:auto;"></span></div>
+        <div class="dir-grid" id="r_dirs"></div>
+      </div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">NAP Consistency Detail</div><div class="sec-div-line"></div></div>
+      <div class="sec-card">
+        <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>Name · Address · Phone Scores (Found Listings)</div>
+        <div id="r_napDetail"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: AI VISIBILITY ── -->
+  <div class="tab-panel" id="tab-ai">
+    <div class="report-body">
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Simulated AI Search Results</div><div class="sec-div-line"></div></div>
+      <div class="info-callout">
+        <strong>How this works:</strong> We asked ChatGPT-style queries that a real patient might type when searching for this type of provider in this area. The responses below simulate what AI search engines currently return — and whether this business appears.
+      </div>
+      <div id="r_ai"></div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Why They're Not Appearing</div><div class="sec-div-line"></div></div>
+      <div class="sec-card" id="r_aiReasons"></div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">The AEO Opportunity</div><div class="sec-div-line"></div></div>
+      <div class="sec-card">
+        <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>What Is AEO &amp; Why It Matters</div>
+        <div class="info-callout" style="margin-bottom:0;">
+          <strong>The shift is already happening.</strong> AI-powered search tools like ChatGPT and Google's Search Generative Experience deliver direct answers instead of a list of websites — which fundamentally changes how patients find providers. Practices that appear in AI recommendations capture patients before they ever open a browser tab.<br><br>
+          AEO (Answer Engine Optimization) is MMW's strategic response: FAQ schema, structured data, press releases, and authoritative content that signals to AI platforms that your client is the trusted local expert. This is included in every MMW program.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: RECOMMENDATION ── -->
+  <div class="tab-panel" id="tab-recommendation">
+    <div class="report-body">
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Program Recommendation</div><div class="sec-div-line"></div></div>
+      <div class="rec-grid" id="r_rec"></div>
+      <div class="rec-main">
+        <div class="rec-main-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg></div>Why This Program</div>
+        <div class="rec-main-text" id="r_recReason"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: COMPETITIVE ANALYSIS ── -->
+  <div class="tab-panel" id="tab-competitive">
+    <div class="report-body">
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Competitor Overview</div><div class="sec-div-line"></div></div>
+      <div id="r_compOverview"></div>
+
+      <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Keyword Battle — Prospect vs Competitors</div><div class="sec-div-line"></div></div>
+      <div class="sec-card" id="r_kwBattle"></div>
+
+      <div id="r_targetKwSection" style="display:none;">
+        <div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-label">Target Keywords</div><div class="sec-div-line"></div></div>
+        <div class="sec-card" id="r_targetKw"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /reportSection -->
+
+<footer>
+  <div class="footer-left">© 2025 Medical Marketing Whiz · Internal Use Only</div>
+  <div class="footer-right">Marketing Analysis Tool · v1.1</div>
+</footer>
+
+<!-- ══════════════════════════════════════════════════
+     PRESENTATION MODE OVERLAY
+══════════════════════════════════════════════════ -->
+<!-- EMAIL MODAL -->
+<div id="emailModal" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(50,53,71,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:32px;max-width:480px;width:100%;margin:20px;box-shadow:0 20px 60px rgba(50,53,71,0.25);animation:slideUp 0.25s cubic-bezier(0.22,1,0.36,1) both;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+      <div>
+        <div style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:800;color:var(--dark);">Email Report</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Send the DOCX report as an email attachment</div>
+      </div>
+      <button onclick="closeEmailModal()" style="width:32px;height:32px;border-radius:8px;background:#f0f2f1;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text-muted);">✕</button>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label class="field-label">To (Prospect Email) <span style="font-weight:300;text-transform:none;font-size:10px;">required</span></label>
+      <input type="email" id="email_to" placeholder="prospect@example.com" style="width:100%;box-sizing:border-box;" />
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label class="field-label" style="margin-bottom:8px;display:block;">CC Recipients</label>
+      <div id="ccList" style="display:flex;flex-direction:column;gap:8px;">
+        <div class="cc-row" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="cc_lori" checked style="accent-color:var(--green);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
+          <label for="cc_lori" style="font-family:'Lato',sans-serif;font-size:13px;color:var(--text-secondary);cursor:pointer;">lori@medicalmarketingwhiz.com</label>
+        </div>
+        <div class="cc-row" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="cc_kat" checked style="accent-color:var(--green);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
+          <label for="cc_kat" style="font-family:'Lato',sans-serif;font-size:13px;color:var(--text-secondary);cursor:pointer;">kat@medicalmarketingwhiz.com</label>
+        </div>
+      </div>
+      <button onclick="addCCField()" style="margin-top:8px;background:none;border:1px dashed var(--border-strong);border-radius:7px;padding:6px 12px;font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-muted);cursor:pointer;width:100%;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)';" onmouseout="this.style.borderColor='var(--border-strong)';this.style.color='var(--text-muted)';">
+        + Add CC
+      </button>
+    </div>
+
+    <div id="emailStatus" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;"></div>
+
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeEmailModal()" style="flex:1;padding:11px;border-radius:9px;border:1px solid var(--border);background:#f0f2f1;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;">Cancel</button>
+      <button onclick="sendEmailReport()" id="emailSendBtn" style="flex:2;padding:11px;border-radius:9px;border:none;background:var(--green);font-family:'Barlow',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.15s;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Send Report
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="presentationOverlay">
+  <div class="pres-stage" id="presStage">
+    <!-- Slides injected by JS -->
+  </div>
+  <div class="pres-nav">
+    <button class="pres-close-btn" onclick="endPresentation()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Exit Presentation
+    </button>
+    <div class="pres-progress" id="presProgress"></div>
+    <div class="pres-nav-btns">
+      <button class="pres-nav-btn" id="presBtnPrev" onclick="presNav(-1)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Previous
+      </button>
+      <button class="pres-nav-btn primary" id="presBtnNext" onclick="presNav(1)">
+        Next
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── HELPERS ──
+function sc(v){if(v===null||v===undefined)return'warn';if(v>=65)return'good';if(v>=35)return'warn';return'bad';}
+function setLS(n){[1,2,3,4,5,6,7].forEach(i=>{const el=document.getElementById('ls'+i);if(!el)return;el.className='lstep'+(i<n?' done':i===n?' active':'');});}
+function showErr(msg){const el=document.getElementById('errMsg');el.textContent=msg;el.style.display='block';document.getElementById('genBtn').disabled=false;document.getElementById('loadingOverlay').classList.remove('active');}
+function dr(label,val,cls){return`<div class="dr"><span class="dr-l">${label}</span><span class="dr-v ${cls||''}">${val}</span></div>`;}
+function bar(label,val,max,cls){const p=max>0?Math.min(100,Math.round(val/max*100)):0;return`<div class="bar"><div class="bar-row"><span>${label}</span><span class="bar-n ${cls}">${val}</span></div><div class="bar-track"><div class="bar-fill ${cls}" style="width:${p}%"></div></div></div>`;}
+function noData(msg){return`<div class="empty-state">${msg||'No data available.'}</div>`;}
+function tip(text){return`<span class="tip"><span class="tip-icon">?</span><span class="tip-box">${text}</span></span>`;}
+function drTip(label,val,cls,tipText){return`<div class="dr"><span class="dr-l">${label}${tipText?' '+tip(tipText):''}</span><span class="dr-v ${cls||''}">${val}</span></div>`;}
+
+// ── TAB SWITCHING ──
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── NICHE SELECTOR ──
+const MAX_NICHES = 3;
+let selectedNiches = []; // empty = auto-detect
+
+function toggleNiche(btn) {
+  const niche = btn.dataset.niche;
+  const autoBtn = document.querySelector('.niche-pill[data-niche="auto"]');
+
+  if (niche === 'auto') {
+    // Clicking auto clears manual selections
+    selectedNiches = [];
+    document.querySelectorAll('.niche-pill').forEach(p => p.classList.remove('active'));
+    autoBtn.classList.add('active');
+    updateNicheHint();
+    return;
+  }
+
+  // Deactivate auto when a manual niche is picked
+  autoBtn.classList.remove('active');
+
+  if (selectedNiches.includes(niche)) {
+    // Deselect
+    selectedNiches = selectedNiches.filter(n => n !== niche);
+    btn.classList.remove('active');
+  } else {
+    // Select — enforce max 3
+    if (selectedNiches.length >= MAX_NICHES) {
+      // Flash the hint to indicate the limit
+      const hint = document.getElementById('nicheHint');
+      hint.style.color = 'var(--red)';
+      setTimeout(() => { hint.style.color = ''; }, 1200);
+      return;
+    }
+    selectedNiches.push(niche);
+    btn.classList.add('active');
+  }
+
+  // If nothing selected, revert to auto
+  if (selectedNiches.length === 0) {
+    autoBtn.classList.add('active');
+  }
+
+  updateNicheHint();
+}
+
+function updateNicheHint() {
+  const hint = document.getElementById('nicheHint');
+  if (!hint) return;
+  if (selectedNiches.length === 0) {
+    hint.textContent = "Keywords will be auto-suggested based on the clinic's detected specialty. Select up to 3 niches manually to override — keyword sets are merged and searched locally.";
+  } else {
+    const count = selectedNiches.length * 8;
+    hint.textContent = selectedNiches.length + ' niche' + (selectedNiches.length > 1 ? 's' : '') + ' selected — approx. ' + count + ' target keywords will be tracked locally. ' + (MAX_NICHES - selectedNiches.length > 0 ? (MAX_NICHES - selectedNiches.length) + ' more niche' + (MAX_NICHES - selectedNiches.length > 1 ? 's' : '') + ' can be added.' : 'Maximum reached.');
+  }
+}
+
+// ── COMPETITIVE TOGGLE ──
+let compEnabled = false;
+// ── GENERATE ──
+async function generateReport(){
+  const name=document.getElementById('f_name').value.trim();
+  const city=document.getElementById('f_city').value.trim();
+  const state=document.getElementById('f_state').value.trim();
+  const website=document.getElementById('f_website').value.trim();
+  const emailList=document.getElementById('f_emailList').value.trim();
+  const targetKeywords=document.getElementById('f_targetKeywords').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const manualCompetitors=document.getElementById('f_competitors').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!name||!city||!state){showErr('Please enter a business name, city, and state.');return;}
+  document.getElementById('errMsg').style.display='none';
+  document.getElementById('genBtn').disabled=true;
+  document.getElementById('loadingOverlay').classList.add('active');
+  setLS(1);
+  const timings=[4000,8000,13000,18000,24000,28000];
+  timings.forEach((t,i)=>setTimeout(()=>setLS(i+2),t));
+  try{
+    const res=await fetch('/api/generate-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessName:name,city,state,website,emailList,targetKeywords,manualCompetitors,runCompetitive:true,forcedNiches:selectedNiches})});
+    const data=await res.json();
+    if(data.error&&!data.places)throw new Error(data.error);
+    setLS(8);
+    await new Promise(r=>setTimeout(r,500));
+    presCapture(data);
+    buildReport(data);
+    document.getElementById('loadingOverlay').classList.remove('active');
+    document.getElementById('intakeSection').style.display='none';
+    document.getElementById('reportSection').style.display='block';
+    // Reset to overview tab
+    switchTab('overview', document.querySelector('.tab-btn'));
+    // Show/hide competitive tab
+    const compTabEl = document.getElementById('compTab');
+    if(compTabEl) compTabEl.style.display = data.competitive ? '' : 'none';
+    if(data.competitive) buildCompetitive(data);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){showErr('Error generating report: '+e.message);}
+}
+
+// ── BUILD REPORT ──
+function buildReport(d){
+  const p=d.places||{};
+  const we=d.websiteExtract||{};
+  const ps=d.pagespeed||{};
+  const al=d.adviceLocal?.report?.data||{};
+  const ov=al.overview?.baselineOverview||{};
+  const baseline=al.data?.baseline||{};
+  const dfs=d.dataForSeo||{};
+  const ai=d.aiVisibility||{};
+  const rec=d.recommendation||{};
+  const emailList=d.emailList||null;
+  const wa=d.websiteAudit||null;
+  if(wa) buildWebsiteAudit(wa);
+
+  // ── HEADER ──
+  document.getElementById('r_name').textContent=d.businessName||'—';
+  const metaParts=[[p.city,p.state].filter(Boolean).join(', '),we.specialty||'',p.website?p.website.replace(/https?:\/\//,'').replace(/\/$/,''):''].filter(Boolean);
+  document.getElementById('r_meta').textContent=metaParts.join('  ·  ');
+  document.getElementById('r_date').textContent='Generated '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  // ── OVERVIEW: SCORES ──
+  const vis=ov.visibilityScore??null;
+  const nap=ov.napScore??null;
+  const reviews=p.reviewCount??0;
+  const mobile=ps.mobile?.performanceScore??null;
+  document.getElementById('r_scores').innerHTML=[
+    {l:'Visibility Score',v:vis!==null?vis+'%':'N/A',c:sc(vis),s:vis!==null&&vis<40?'Needs significant work':vis!==null&&vis<70?'Room to grow':'Strong presence'},
+    {l:'NAP Consistency',v:nap!==null?nap+'%':'N/A',c:sc(nap),s:nap!==null&&nap<40?'Critical inconsistencies':nap!==null&&nap<70?'Some issues':'Consistent'},
+    {l:'Google Reviews',v:reviews,c:reviews>=50?'good':reviews>=15?'warn':'bad',s:p.rating?p.rating+'★ avg rating':'Goal: 100+ reviews'},
+    {l:'Mobile Performance',v:mobile!==null?mobile+'/100':'N/A',c:sc(mobile),s:mobile!==null&&mobile<50?'Significant issues':mobile!==null&&mobile<70?'Needs work':'Good'},
+  ].map(s=>`<div class="sc-card ${s.c}"><div class="sc-label">${s.l}</div><div class="sc-val">${s.v}</div><div class="sc-sub">${s.s}</div></div>`).join('');
+
+  // ── OVERVIEW: BIZ INFO ──
+  document.getElementById('r_bizInfo').innerHTML=[
+    dr('Address',p.formattedAddress||'Not found',''),
+    dr('Phone',p.phone||'Not found',''),
+    dr('Website',p.website?`<a href="${p.website}" target="_blank" style="color:var(--green-mid);font-size:12px;">${p.website.replace(/https?:\/\//,'').replace(/\/$/,'')}</a>`:'Not found',''),
+    dr('Specialty',we.specialty||'Unknown',''),
+    dr('Practitioner',we.practitionerType||'Unknown',''),
+    dr('Services',we.services?.length?we.services.slice(0,3).join(', ')+(we.services.length>3?` +${we.services.length-3} more`:''):'Unknown',''),
+  ].join('');
+
+  // ── OVERVIEW: AT A GLANCE ──
+  const dirsFound=ov.directoriesFound??0;
+  const dirsTotal=ov.directoriesTotal??27;
+  const bl=dfs.backlinks||{};
+  const p1kws=dfs.keywords?.filter(k=>k.isPage1).length??0;
+  document.getElementById('r_glance').innerHTML=[
+    dr('Directories Found',`${dirsFound} of ${dirsTotal}`,dirsFound>=15?'good':dirsFound>=5?'warn':'bad'),
+    dr('Page 1 Keywords',p1kws,p1kws>=5?'good':p1kws>=1?'warn':'bad'),
+    dr('Domain Rank',bl.domainRank??'N/A',sc(bl.domainRank)),
+    dr('Total Backlinks',(bl.total||0).toLocaleString(),bl.total>100?'good':bl.total>20?'warn':'bad'),
+    dr('Spam Score',bl.spamScore!==undefined?bl.spamScore+'%':'N/A',bl.spamScore>40?'bad':bl.spamScore>20?'warn':'good'),
+    dr('Voice Search','0 of 5 assistants','bad'),
+  ].join('');
+
+  // ── OVERVIEW: TOP OPPORTUNITIES ──
+  const oppsList=[];
+  if(reviews<100) oppsList.push({priority:'high',title:'Build Google Reviews',desc:`Only ${reviews} reviews. Goal is 100+ at 4.8★. Implement automated review requests immediately.`});
+  if(dirsFound<15) oppsList.push({priority:'high',title:`Expand Directory Listings (${dirsFound}/${dirsTotal})`,desc:'Missing critical directory citations that boost local SEO and AI visibility.'});
+  if(mobile!==null&&mobile<65) oppsList.push({priority:'high',title:`Fix Mobile Performance (${mobile}/100)`,desc:'Mobile score is hurting search rankings and driving users away before they convert.'});
+  if(!bl.domainRank||bl.domainRank<20) oppsList.push({priority:'medium',title:'Build Domain Authority',desc:'Low domain rank means competitors outrank you. Press releases and backlink building are essential.'});
+  if(p1kws===0) oppsList.push({priority:'medium',title:'Target Page 1 Keywords',desc:'No keywords ranking on page 1. SEO content strategy and GBP optimization needed urgently.'});
+  if(bl.spamScore>40) oppsList.push({priority:'medium',title:'Address High Spam Score',desc:`${bl.spamScore}% spam score suggests low-quality backlinks that may be hurting rankings.`});
+  // ── HOIST VARIABLES needed across overview + detail tabs ──
+  const locals=baseline.locals||[];
+  const goog=locals.find(l=>l.directory==='google');
+  const yelp=locals.find(l=>l.directory==='yelp');
+  const bing=locals.find(l=>l.directory==='bing');
+  const gbpExists=!!(p.placeId);
+  const gbpOptimized=goog&&goog.score>=80;
+  const allDirs=[...(baseline.locals||[]),...(baseline.directories||[])];
+  const foundDirs=allDirs.filter(x=>x.found);
+  const missingDirs=allDirs.filter(x=>!x.found);
+
+  // ── OVERVIEW: PAGESPEED SUMMARY (shared render with website tab) ──
+  function psShort(data){
+    if(!data)return noData('No data.');
+    const s=data.performanceScore;
+    return[
+      dr('Score',s!==null?s+'/100':'N/A',sc(s)),
+      dr('First Contentful Paint',data.fcp||'N/A',''),
+      dr('Largest Contentful Paint',data.lcp||'N/A',''),
+      dr('Time to Interactive',data.tti||'N/A',''),
+      dr('Total Blocking Time',data.tbt||'N/A',''),
+      dr('Page Size',data.pageSize||'N/A',''),
+    ].join('');
+  }
+  document.getElementById('r_ovMobile').innerHTML=psShort(ps.mobile);
+  document.getElementById('r_ovDesktop').innerHTML=psShort(ps.desktop);
+
+  // ── OVERVIEW: GBP SUMMARY ──
+  document.getElementById('r_ovGbp').innerHTML=[
+    dr('Google Business Profile',gbpExists?'<span class="badge bg">Found</span>':'<span class="badge bb">Not Found</span>',''),
+    dr('Google Reviews',(reviews||0).toString(),reviews>=50?'good':reviews>=15?'warn':'bad'),
+    dr('Star Rating',p.rating?p.rating+' ★':'N/A',p.rating>=4.5?'good':p.rating>=4?'warn':'bad'),
+    dr('Yelp',yelp?`<span class="badge bg">Found</span>`:'<span class="badge bb">Not Found</span>',''),
+    dr('Voice Search','0 of 5 assistants found','bad'),
+    dr('Review Goal','<span style="font-size:12px;color:var(--text-muted);">Target: 100+ reviews at 4.8★</span>',''),
+  ].filter(Boolean).join('');
+
+  // ── OVERVIEW: DIRECTORY SUMMARY ──
+  const foundCount=allDirs.filter(x=>x.found).length;
+  const missingCount=allDirs.filter(x=>!x.found).length;
+  const napOk=foundDirs.filter(x=>x.nap&&x.nap.name>=80&&x.nap.address>=80).length;
+  document.getElementById('r_ovDirs').innerHTML=[
+    dr('Directories Found',`${foundCount} of ${dirsTotal}`,foundCount>=15?'good':foundCount>=5?'warn':'bad'),
+    dr('Directories Missing',missingCount,missingCount>15?'bad':missingCount>5?'warn':'good'),
+    dr('NAP Consistency',nap!==null?nap+'%':'N/A',sc(nap)),
+    dr('Listings with Perfect NAP',`${napOk} of ${foundCount||1}`,napOk===foundCount?'good':napOk>0?'warn':'bad'),
+    dr('Voice Search Readiness','0 of 5 assistants','bad'),
+    dr('Goal','<span style="font-size:12px;color:var(--text-muted);">40+ directories, 100% NAP consistency</span>',''),
+  ].join('');
+
+  document.getElementById('r_topOpps').innerHTML=oppsList.length?oppsList.map(o=>`
+    <div class="opp">
+      <div class="opp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="${o.priority==='high'?'var(--red)':'var(--amber)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div><div class="opp-t">${o.title} <span class="badge ${o.priority==='high'?'bb':'bw'}" style="margin-left:6px;">${o.priority}</span></div><div class="opp-s">${o.desc}</div></div>
+    </div>`).join(''):noData('No critical opportunities identified — great shape!');
+
+  // ── WEBSITE: CATEGORY SCORES ──
+  const mob=ps.mobile||{}; const desk=ps.desktop||{};
+  document.getElementById('r_catScores').innerHTML=[
+    {l:'Performance (Mobile)',v:mob.performanceScore,c:sc(mob.performanceScore)},
+    {l:'Performance (Desktop)',v:desk.performanceScore,c:sc(desk.performanceScore)},
+    {l:'Accessibility',v:mob.accessibilityScore??desk.accessibilityScore,c:sc(mob.accessibilityScore??desk.accessibilityScore)},
+    {l:'Best Practices',v:mob.bestPracticesScore??desk.bestPracticesScore,c:sc(mob.bestPracticesScore??desk.bestPracticesScore)},
+    {l:'SEO Score',v:mob.seoScore??desk.seoScore,c:sc(mob.seoScore??desk.seoScore)},
+    {l:'Passing Audits',v:mob.passingAudits??'—',c:'',noScore:true},
+    {l:'Failing Audits',v:mob.failingAudits??'—',c:'',noScore:true},
+  ].filter(x=>x.v!==null&&x.v!==undefined).map(s=>`<div class="cat-sc"><div class="cat-sc-label">${s.l}</div><div class="cat-sc-val ${s.c||''}">${s.v!==null&&s.v!==undefined?s.v+(s.noScore?'':'')+(typeof s.v==='number'&&!s.noScore?'/100':''):s.v}</div></div>`).join('');
+
+  // ── WEBSITE: PAGESPEED PANELS ──
+  function psPanel(data){
+    if(!data)return noData('No data available.');
+    const s=data.performanceScore;
+    return[
+      drTip('Performance Score',s!==null?s+'/100':'N/A',sc(s),'Google scores your site 0-100 on speed. Below 50 is poor, 50-89 needs work, 90+ is good. A slow site loses patients before they even read your content.'),
+      drTip('First Contentful Paint',data.fcp||'N/A','','How long it takes for the first text or image to appear on screen. Under 1.8s is good. Over 3s means patients are staring at a blank page.'),
+      drTip('Largest Contentful Paint',data.lcp||'N/A','','How long it takes for the biggest element (usually your hero image or headline) to fully load. Google wants this under 2.5s for good rankings.'),
+      drTip('Time to Interactive',data.tti||'N/A','','How long until a visitor can actually click buttons and use the site. A high number means the page looks loaded but nothing works yet.'),
+      drTip('Total Blocking Time',data.tbt||'N/A','','How long your site\'s JavaScript code freezes the page and prevents interaction. Under 200ms is good. High numbers mean slow, frustrating experiences on mobile.'),
+      drTip('Cumulative Layout Shift',data.cls||'N/A','','Measures how much the page jumps around while loading — like when you go to tap a button and it moves. Google penalizes sites with a lot of layout shift.'),
+      drTip('Speed Index',data.speedIndex||'N/A','','How quickly the visible content of a page fills in during loading. A lower number means patients see something useful faster.'),
+      drTip('Page Size',data.pageSize||'N/A','','The total weight of everything on the page — images, code, fonts, etc. Oversized pages load slowly, especially on mobile. Aim for under 1,000 KiB.'),
+      drTip('HTTP Requests',data.requests?data.requests+' requests':'N/A',data.requests>100?'bad':data.requests>50?'warn':'good','Every image, script, and font on a page is a separate request to the server. More requests = slower load. Over 100 is a red flag.'),
+      drTip('Tap Targets',data.tapTargets?'<span class="badge bg">Pass</span>':'<span class="badge bb">Fail</span>','','Tap targets are buttons and links on mobile. A fail means buttons are too small or too close together — patients accidentally tap the wrong thing and get frustrated.'),
+      drTip('Viewport Meta',data.viewport?'<span class="badge bg">Pass</span>':'<span class="badge bb">Fail</span>','','This tells phones and tablets how to properly scale and display the website. A fail means the site likely looks zoomed out and tiny on mobile devices.'),
+      drTip('Font Sizes',data.fontSizes?'<span class="badge bg">Pass</span>':'<span class="badge bb">Fail</span>','','A fail means some text on the site is too small to read comfortably on a phone without zooming in. Google penalizes this in mobile rankings.'),
+    ].join('');
+  }
+  document.getElementById('r_psMobile').innerHTML=psPanel(ps.mobile);
+  document.getElementById('r_psDesktop').innerHTML=psPanel(ps.desktop);
+
+  // ── WEBSITE: OPPORTUNITIES ──
+  const allOpps=[...(ps.mobile?.opportunities||[]),...(ps.desktop?.opportunities||[])];
+  const uniqOpps=allOpps.filter((o,i,a)=>a.findIndex(x=>x.title===o.title)===i);
+  document.getElementById('r_opps').innerHTML=uniqOpps.length?uniqOpps.map(o=>`
+    <div class="opp">
+      <div class="opp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#c97d10" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div><div class="opp-t">${o.title}</div><div class="opp-s">${o.savings||''}</div></div>
+    </div>`).join(''):noData('No significant opportunities found.');
+
+  // ── WEBSITE: DIAGNOSTICS ──
+  const allDiags=[...(ps.mobile?.diagnostics||[]),...(ps.desktop?.diagnostics||[])];
+  const uniqDiags=allDiags.filter((o,i,a)=>a.findIndex(x=>x.title===o.title)===i);
+  document.getElementById('r_diags').innerHTML=uniqDiags.length?uniqDiags.map(d=>{
+    const cls=d.score<0.5?'bad':'warn';
+    return`<div class="diag"><div class="diag-ico ${cls}"></div><div><div class="diag-t">${d.title}</div><div class="diag-d">${d.description||''}</div></div></div>`;
+  }).join(''):noData('No significant diagnostic issues found.');
+
+  // ── KEYWORDS: BACKLINKS ──
+  document.getElementById('r_backlinks').innerHTML=[
+    dr('Domain Rank',bl.domainRank!==undefined?bl.domainRank:'N/A',sc(bl.domainRank)),
+    dr('Total Backlinks',(bl.total||0).toLocaleString(),bl.total>100?'good':bl.total>20?'warn':'bad'),
+    dr('Referring Domains',(bl.referringDomains||0).toLocaleString(),''),
+    dr('Referring Main Domains',(bl.referringMainDomains||0).toLocaleString(),''),
+    dr('Spam Score',bl.spamScore!==undefined?bl.spamScore+'%':'N/A',bl.spamScore>40?'bad':bl.spamScore>20?'warn':'good'),
+    dr('Domain Age',bl.firstSeen?'Since '+new Date(bl.firstSeen).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'N/A',''),
+  ].join('');
+
+  // ── KEYWORDS: RANK DIST ──
+  const dov=dfs.domainOverview||{};
+  const maxBar=Math.max(dov.pos1||0,dov.pos2_3||0,dov.pos4_10||0,dov.pos11_20||0,dov.pos21_100||0,1);
+  document.getElementById('r_rankDist').innerHTML=
+    bar('Position 1',dov.pos1||0,maxBar,'good')+
+    bar('Positions 2–3',dov.pos2_3||0,maxBar,'good')+
+    bar('Positions 4–10',dov.pos4_10||0,maxBar,'warn')+
+    bar('Positions 11–20',dov.pos11_20||0,maxBar,'bad')+
+    bar('Positions 21–100',dov.pos21_100||0,maxBar,'bad')+
+    dr('Est. Monthly Traffic Value',dov.etv?'$'+dov.etv.toFixed(2):'$0.00','');
+
+  // ── KEYWORDS: TABLE ──
+  const kws=dfs.keywords||[];
+  const targetKws=dfs.targetKeywords||[];
+  const detectedNiche=d.detectedNiche||'general_medical';
+  const effectiveNiches=d.effectiveNiches||[detectedNiche];
+  const suggestedKeywords=d.suggestedKeywords||[];
+  const p1=kws.filter(k=>k.isPage1).length;
+  const targetRanking=targetKws.filter(k=>k.position).length;
+
+  // Build badge — show target count and niche
+  const nicheLabels={medical_spa:'Medical Spa',hormone_therapy:'Hormone Therapy',weight_loss:'Weight Loss',womens_health:"Women's Health",chiropractic:'Chiropractic',dermatology:'Dermatology',concierge_medicine:'Concierge Medicine',integrative_wellness:'Integrative Wellness',aesthetics_skincare:'Aesthetics / Skin Care',general_medical:'General Medical'};
+  const nicheLabel=effectiveNiches.map(n=>nicheLabels[n]||n).join(' + ');
+  let kwBadgeHtml=`<span class="badge ${p1>0?'bw':'bb'}">${p1} on page 1</span>`;
+  if(targetKws.length>0) kwBadgeHtml+=` <span class="badge" style="background:var(--dark);color:#fff;margin-left:4px;">${targetKws.length} target kw${targetKws.length>1?'s':''}</span>`;
+  if(detectedNiche) kwBadgeHtml+=` <span class="badge" style="background:var(--green-light);color:var(--green-mid);border:1px solid var(--border-strong);margin-left:4px;">${nicheLabel}</span>`;
+  document.getElementById('r_kwBadge').innerHTML=kwBadgeHtml;
+
+  // Show niche + auto-suggested keyword notice above the table
+  const repEnteredKws=d.targetKeywords&&d.targetKeywords.length>0;
+  const kwNotice=targetKws.length>0?`<div style="font-family:'Lato',sans-serif;font-size:13px;font-weight:300;color:var(--text-secondary);padding:10px 14px;background:var(--green-lighter);border:1px solid var(--border-strong);border-radius:8px;margin-bottom:14px;line-height:1.55;">
+    <strong style="font-weight:700;color:var(--dark);">Detected niche: ${nicheLabel}</strong> &nbsp;·&nbsp;
+    ${repEnteredKws?'Using rep-entered target keywords':effectiveNiches.length>1?effectiveNiches.length+' niches merged':'Auto-suggested based on detected specialty'} &nbsp;·&nbsp;
+    Searched locally from <strong style="font-weight:600;">${[p.city||d.city,p.state||d.state].filter(Boolean).join(', ')}</strong>
+  </div>`:'';
+  document.getElementById('r_keywords').insertAdjacentHTML('beforebegin', kwNotice);
+
+  // Merge auto-detected + target keywords for the table
+  // Target keywords that are already in kws (domain ranks for them) get merged in-place
+  const rankedTerms=new Set(kws.map(k=>k.keyword.toLowerCase()));
+  const targetOnly=targetKws.filter(k=>!rankedTerms.has(k.keyword.toLowerCase()));
+  // All rows: auto-detected first, then target-only at bottom
+  const allKws=[...kws, ...targetOnly];
+
+  function kwRow(k){
+    const isTarget=k.isTarget||false;
+    const pos=k.position||null;
+    const c=pos?(pos<=3?'good':pos<=10?'warn':'bad'):'bad';
+    const diff=k.keywordDifficulty;
+    const diffColor=diff>70?'var(--red)':diff>40?'var(--amber)':'var(--green)';
+    const diffBar=diff!==null?'<div class="kw-diff"><div class="kw-diff-fill" style="width:'+diff+'%;background:'+diffColor+';height:100%;border-radius:3px;"></div></div> <span style="font-size:12px;">'+diff+'</span>':'—';
+    const posDisplay=pos?'<span class="kw-pos '+c+'">#'+pos+'</span>':'<span style="font-size:13px;color:var(--text-muted);font-weight:300;">Not ranking</span>';
+    const pageDisplay=pos?(pos<=10?'<span class="badge bg">P1</span>':pos<=20?'<span class="badge bw">P2</span>':'<span class="badge bb">P3+</span>'):'<span class="badge bb">—</span>';
+    const targetBadge=isTarget?'<span class="badge" style="background:var(--dark);color:#fff;font-size:9px;margin-left:5px;">Target</span>':'';
+    // Show localized keyword hint if it differs from original
+    const localHint=k.localizedKeyword?'<div style="font-size:11px;color:var(--text-muted);font-style:italic;">Searched as: '+k.localizedKeyword+'</div>':'';
+    const urlDisplay=k.url?k.url.replace(/https?:\/\//,'').replace(/\/$/,''):'—';
+    // Map Pack cell — only shown for target keywords
+    let mapPackCell='';
+    if(isTarget){
+      const mp=k.mapPackPos;
+      if(mp===1) mapPackCell='<span class="badge bg" style="font-size:10px;">#1 ★</span>';
+      else if(mp===2) mapPackCell='<span class="badge bg" style="font-size:10px;">#2</span>';
+      else if(mp===3) mapPackCell='<span class="badge bw" style="font-size:10px;">#3</span>';
+      else mapPackCell='<span style="font-size:12px;color:var(--text-muted);">Not in Pack</span>';
+    } else {
+      mapPackCell='<span style="font-size:12px;color:var(--text-muted);">—</span>';
+    }
+    return '<tr style="'+(isTarget&&!pos?'background:rgba(50,53,71,0.03);':'')+'">'
+      +'<td><div class="kw-term">'+k.keyword+targetBadge+'</div>'+localHint+'<div class="kw-url">'+urlDisplay+'</div></td>'
+      +'<td style="font-size:13px;">'+(k.searchVolume?k.searchVolume.toLocaleString()+'/mo':'—')+'</td>'
+      +'<td style="font-size:13px;">'+(k.cpc?'$'+k.cpc.toFixed(2):'—')+'</td>'
+      +'<td>'+diffBar+'</td>'
+      +'<td style="font-size:13px;">'+pageDisplay+'</td>'
+      +'<td>'+posDisplay+'</td>'
+      +'<td>'+mapPackCell+'</td>'
+      +'</tr>';
+  }
+
+  const hasTargets=targetKws.length>0;
+  if(allKws.length){
+    let tableHtml='<table class="kw-table"><thead><tr><th>Keyword</th><th>Volume</th><th>CPC</th><th>Difficulty</th><th>Page</th><th>Organic Position</th>'+(hasTargets?'<th>Map Pack</th>':'')+'</tr></thead><tbody>';
+    tableHtml+=allKws.map(kwRow).join('');
+    tableHtml+='</tbody></table>';
+    if(targetOnly.length>0){
+      tableHtml+='<div style="font-family:Lato,sans-serif;font-size:12px;color:var(--text-muted);font-weight:300;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">Target keywords marked <span class="badge" style="background:var(--dark);color:#fff;font-size:9px;">Target</span> show localized organic ranking + Map Pack position. Auto-appends city name if not already included.</div>';
+    }
+    document.getElementById('r_keywords').innerHTML=tableHtml;
+  } else {
+    document.getElementById('r_keywords').innerHTML=noData('No keyword ranking data found for this domain.');
+  }
+
+  // ── LOCAL: GBP ──
+  document.getElementById('r_gbp').innerHTML=[
+    dr('Google Business Profile',gbpExists?'<span class="badge bg">Found</span>':'<span class="badge bb">Not Found</span>',''),
+    gbpExists?dr('GBP Optimization',gbpOptimized
+      ?`<span class="badge bg">Optimized · ${goog.score}%</span>`
+      :goog
+        ?`<span class="badge bw">Needs Work · ${goog.score}%</span>`
+        :`<span class="badge bw">Needs Review</span> <span style="font-size:11px;color:var(--text-muted);font-weight:300;">(GBP found via Google but not yet scored by citation scanner — may be unclaimed or under-optimized)</span>`
+    ,''):'',
+    gbpExists&&goog?dr('Claimed',goog.claimed?'<span class="badge bg">Yes</span>':'<span class="badge bb">No</span>',''):'',
+    dr('Google Reviews',(reviews||0).toString(),reviews>=50?'good':reviews>=15?'warn':'bad'),
+    dr('Star Rating',p.rating?p.rating+' ★':'N/A',p.rating>=4.5?'good':p.rating>=4?'warn':'bad'),
+    dr('Yelp',yelp?'<span class="badge bg">Found'+(yelp.score!==undefined?' · '+yelp.score+'%':'')+'</span>':'<span class="badge bb">Not Found</span>',''),
+    dr('Bing',bing?'<span class="badge bg">Found'+(bing.score!==undefined?' · '+bing.score+'%':'')+'</span>':'<span class="badge bb">Not Found</span>',''),
+    dr('Target','<span style="font-size:12px;color:var(--text-muted);">100+ reviews · 4.8★ · Active responses</span>',''),
+    dr('Email List Size',emailList?emailList:'<span style="color:var(--text-muted);font-weight:300;font-size:12px;">Not provided</span>',''),
+    emailList?dr('Email Strategy',(()=>{const n=parseInt(emailList)||0;if(n>=2000)return'<span class="badge bg">Nurture Focus — Monthly newsletter, automation & campaigns (never stop growing)</span>';if(n>=500)return'<span class="badge bw">Grow + Nurture — Active list building alongside monthly campaigns</span>';return'<span class="badge bb">Build First — Lead magnets & list growth are the immediate priority</span>';})()):''
+  ].filter(Boolean).join('');
+
+  // ── LOCAL: VOICE ──
+  const voices=baseline.voice||[];
+  document.getElementById('r_voice').innerHTML=voices.length?voices.map(v=>{
+    const c=v.score>=70?'good':v.score>=40?'warn':'bad';
+    return`<div class="bar"><div class="bar-row"><span>${v.name}</span><span class="bar-n ${c}">${v.score}%</span></div><div class="bar-track"><div class="bar-fill ${c}" style="width:${v.score}%"></div></div></div>`;
+  }).join(''):noData('No voice data available.');
+
+  // ── LOCAL: DIRECTORIES ──
+  document.getElementById('r_dirBadge').innerHTML=`<span class="badge ${foundDirs.length<5?'bb':foundDirs.length<15?'bw':'bg'}">${foundDirs.length} found · ${missingDirs.length} missing</span>`;
+  document.getElementById('r_dirs').innerHTML=[...foundDirs,...missingDirs].map(x=>{
+    const issue=x.found&&x.nap&&(x.nap.name<80||x.nap.address<80);
+    return`<div class="di ${x.found?'found':'missing'}"><div class="di-dot"></div>${x.product}${x.found&&x.score!==undefined?' &middot; '+x.score+'%':''}${issue?' &#9888;':''}</div>`;
+  }).join('');
+
+  // ── LOCAL: NAP DETAIL ──
+  // Build what the canonical NAP should be (from Places)
+  const canonicalName = p.name || d.businessName || '';
+  const canonicalPhone = p.phone || '';
+  const canonicalAddress = [p.street, p.suite ? 'Ste '+p.suite : '', p.city, p.state, p.zip].filter(Boolean).join(', ');
+
+  const foundWithNap=foundDirs.filter(x=>x.nap);
+  if(foundWithNap.length){
+    const canonicalBox='<div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:14px;font-family:Lato,sans-serif;font-size:13px;color:var(--text-secondary);line-height:1.6;font-weight:300;"><strong style="font-weight:700;color:var(--dark);">Canonical NAP (source of truth from Google):</strong><br><span style="color:var(--green-mid);font-weight:400;">'+canonicalName+'</span> &nbsp;&middot;&nbsp; '+canonicalAddress+' &nbsp;&middot;&nbsp; '+canonicalPhone+'</div>';
+    const rows=foundWithNap.map(function(x){
+      const nc=x.nap.name>=80?'good':x.nap.name>=50?'warn':'bad';
+      const ac=(x.nap.address===undefined||x.nap.address>=80)?'good':x.nap.address>=50?'warn':'bad';
+      const pc=(x.nap.phone===undefined||x.nap.phone>=80)?'good':x.nap.phone>=50?'warn':'bad';
+      const scores=[x.nap.name,x.nap.address,x.nap.phone].filter(v=>v!==undefined);
+      const ov2=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+      const oc=ov2>=80?'good':ov2>=50?'warn':'bad';
+      const issues=[];
+      if(x.nap.name<100) issues.push('Name mismatch');
+      if(x.nap.address!==undefined&&x.nap.address<100) issues.push('Address mismatch');
+      if(x.nap.phone!==undefined&&x.nap.phone<100) issues.push('Phone mismatch');
+      const foundName=x.name||'';
+      const foundAddress=x.address||'';
+      const foundPhone=x.phone||'';
+      const foundDetails=[foundName,foundAddress,foundPhone].filter(Boolean).join(' · ');
+      const linkHtml=x.link?(' <a href="'+x.link+'" target="_blank" style="font-size:10px;color:var(--green-mid);margin-left:4px;">&#8599;</a>'):'';
+      const issueHtml=issues.length===0?'<span style="color:var(--green-mid);">✓ Perfect match</span>':'<span style="color:var(--amber);">'+issues.join(', ')+'</span>';
+      const foundHtml=foundDetails?'<br><span style="font-style:italic;font-size:13px;">Found: '+foundDetails.substring(0,120)+(foundDetails.length>120?'…':'')+'</span>':'';
+      return '<tr>'
+        +'<td style="font-weight:500;color:var(--dark);">'+x.product+linkHtml+'</td>'
+        +'<td><span class="nap-score '+nc+'">'+x.nap.name+'%</span></td>'
+        +'<td><span class="nap-score '+ac+'">'+(x.nap.address!==undefined?x.nap.address+'%':'—')+'</span></td>'
+        +'<td><span class="nap-score '+pc+'">'+(x.nap.phone!==undefined?x.nap.phone+'%':'—')+'</span></td>'
+        +'<td><span class="nap-score '+oc+'">'+ov2+'%</span></td>'
+        +'<td style="font-size:13px;color:var(--text-secondary);min-width:180px;word-break:break-word;line-height:1.5;vertical-align:top;padding-top:10px;">'+issueHtml+foundHtml+'</td>'
+        +'</tr>';
+    }).join('');
+    document.getElementById('r_napDetail').innerHTML=canonicalBox+'<table class="nap-table"><thead><tr><th>Directory</th><th>Name Score</th><th>Address Score</th><th>Phone Score</th><th>Overall</th><th>What Was Found</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  } else {
+    document.getElementById('r_napDetail').innerHTML=noData('No found listings with NAP data available.');
+  }
+
+  // ── AI ──
+  const spec=we.specialty||'medical aesthetics';
+  const cs=[p.city||d.city,p.state||d.state].filter(Boolean).join(', ');
+
+  // New multi-query format
+  const aiQueries = ai.queries || [];
+  const aiQueriesHtml = aiQueries.length ? aiQueries.map((q,i) => `
+    <div class="ai-box" style="margin-bottom:12px;">
+      <div class="ai-lbl" style="display:flex;align-items:center;gap:8px;">
+        <span style="background:${q.appears?'var(--green-light)':'var(--red-light)'};border:1px solid ${q.appears?'var(--border-strong)':'#f0c0c0'};color:${q.appears?'var(--green-mid)':'var(--red)'};font-size:9px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:0.1em;">${q.appears?'Appears':'Not Found'}</span>
+        Query ${i+1}: "${q.q}"
+      </div>
+      <div class="ai-txt" style="margin-top:8px;">${q.result}</div>
+    </div>`).join('') :
+    // Fallback for old format
+    `<div class="ai-box"><div class="ai-lbl">Query: "Who offers the best ${spec} in ${cs}?"</div><div class="ai-txt">${ai.query1||'No AI visibility data available.'}</div></div>
+    <div class="ai-box"><div class="ai-lbl">Why AI visibility is limited</div><div class="ai-txt">${ai.query2||''}</div></div>`;
+
+  document.getElementById('r_ai').innerHTML = aiQueriesHtml;
+
+  // Reasons box
+  const reasons = ai.reasons || ai.query2 || 'Limited online presence, missing citations, and lack of structured content are preventing AI platforms from surfacing this business.';
+  document.getElementById('r_aiReasons').innerHTML = `
+    <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>Why They're Not in AI Results</div>
+    <div class="ai-txt" style="padding:4px 0;">${reasons}</div>`;
+
+  // ── RECOMMENDATION ──
+  const programs=[
+    {key:'Smart Start',price:'$1,997/mo',reason:rec.smart_start_reason||''},
+    {key:'Practice Pro',price:'$2,997/mo',reason:rec.practice_pro_reason||''},
+    {key:'Whiz Works',price:'$4,497/mo',reason:rec.whiz_works_reason||''},
+  ];
+  const recommended=rec.recommended||'Practice Pro';
+  const fitScore=rec.fit_score||75;
+  document.getElementById('r_rec').innerHTML=programs.map(prog=>{
+    const isRec=prog.key===recommended;
+    return`<div class="rec-card ${isRec?'recommended':''}">
+      <div class="rec-badge">${isRec?'Recommended':prog.key}</div>
+      <div class="rec-name">${prog.key}</div>
+      <div class="rec-price">${prog.price} · 12-month commitment</div>
+      <div class="rec-reason-text">${prog.reason}</div>
+      ${isRec?`<div class="rec-fit"><div class="rec-fit-lbl">Fit score: ${fitScore}%</div><div class="rec-fit-track"><div class="rec-fit-fill" style="width:${fitScore}%"></div></div></div>`:''}
+    </div>`;
+  }).join('');
+  document.getElementById('r_recReason').textContent=rec.main_reason||'';
+}
+
+function buildWebsiteAudit(wa) {
+  const el = document.getElementById('r_websiteAudit');
+  if (!el) return;
+  if (!wa || wa.error) {
+    el.innerHTML = `<div class="sec-card">${noData('Website audit could not be completed for this URL.')}</div>`;
+    return;
+  }
+
+  const categories = [
+    { key: 'seo',        label: 'SEO Foundation',          icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+    { key: 'content',    label: 'Content Depth & Quality',  icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { key: 'trust',      label: 'Trust & Credibility',      icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+    { key: 'conversion', label: 'Conversion Optimization',  icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+    { key: 'services',   label: 'Service Page Coverage',    icon: 'M4 6h16M4 10h16M4 14h16M4 18h16' },
+  ];
+
+  // Overall score ring
+  const overall = wa.overallScore ?? null;
+  const overallCls = overall>=70?'good':overall>=45?'warn':'bad';
+  const overallColor = overall>=70?'var(--green)':overall>=45?'var(--amber)':'var(--red)';
+
+  // Structural signals grid
+  const sig = wa.structuralSignals || {};
+  const signals = [
+    { label: 'HTTPS / SSL',          pass: sig.hasSSL },
+    { label: 'WordPress',            pass: sig.hasWordPress, neutral: true },
+    { label: 'H1 Tag',               pass: sig.hasH1 },
+    { label: 'Meta Description',     pass: sig.hasMetaDesc },
+    { label: 'Schema Markup',        pass: sig.hasSchema },
+    { label: 'Open Graph Tags',      pass: sig.hasOpenGraph },
+    { label: 'FAQ Section',          pass: sig.hasFAQ },
+    { label: 'Testimonials',         pass: sig.hasTestimonials },
+    { label: 'Before/After Photos',  pass: sig.hasBeforeAfter },
+    { label: 'Online Booking',       pass: sig.hasBooking },
+    { label: 'Phone Visible',        pass: sig.hasPhone },
+    { label: 'Credentials Listed',   pass: sig.hasCreds },
+    { label: 'Blog / Content',       pass: sig.hasBlog },
+    { label: 'Video Content',        pass: sig.hasVideo },
+    { label: `Image Alt Text (${sig.altTextRate??'?'}%)`, pass: sig.altTextRate>=80 },
+  ];
+
+  el.innerHTML = `
+    <!-- Overall score + top findings -->
+    <div class="two-col" style="margin-bottom:14px;">
+      <div class="sec-card" style="display:flex;align-items:center;gap:20px;">
+        <div style="text-align:center;flex-shrink:0;">
+          <div style="font-family:'Poppins',sans-serif;font-size:48px;font-weight:800;line-height:1;color:${overallColor};">${overall??'&mdash;'}</div>
+          <div style="font-family:'Barlow',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-top:4px;">Overall Score</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;color:var(--dark);margin-bottom:10px;">Category Breakdown</div>
+          ${categories.map(cat=>{
+            const d=wa[cat.key]||{};
+            const s=d.score??null;
+            const cc=s>=70?'var(--green)':s>=45?'var(--amber)':'var(--red)';
+            const pct=s??0;
+            return`<div style="margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;font-family:'Lato',sans-serif;font-size:12px;color:var(--text-secondary);margin-bottom:3px;font-weight:300;">
+                <span>${cat.label}</span><span style="font-weight:700;color:${cc};">${s??'&mdash;'}</span>
+              </div>
+              <div style="height:5px;background:var(--green-light);border-radius:3px;overflow:hidden;">
+                <div style="width:${pct}%;height:100%;background:${cc};border-radius:3px;"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="sec-card">
+        <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>Top Findings</div>
+        ${(wa.topFindings||[]).length ? wa.topFindings.map(f=>`
+          <div class="opp">
+            <div class="opp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            <div class="opp-t">${f}</div>
+          </div>`).join('') : noData('No major findings.')}
+      </div>
+    </div>
+
+    <!-- Structural signals checklist -->
+    <div class="sec-card" style="margin-bottom:14px;">
+      <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>Technical Checklist</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+        ${signals.map(s=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;background:${s.neutral?'var(--bg)':s.pass?'var(--green-light)':'var(--red-light)'};border:1px solid ${s.neutral?'var(--border)':s.pass?'var(--border-strong)':'#f0c0c0'};">
+            <span style="font-size:12px;">${s.pass?'✓':'✗'}</span>
+            <span style="font-family:'Barlow',sans-serif;font-size:11px;font-weight:400;color:${s.neutral?'var(--text-muted)':s.pass?'var(--green-mid)':'var(--red)'};">${s.label}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Category detail cards -->
+    <div class="two-col">
+      ${categories.map(cat=>{
+        const d=wa[cat.key]||{};
+        return`<div class="sec-card">
+          <div class="sc-title">
+            <div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${cat.icon}"/></svg></div>
+            ${cat.label}
+            <span style="margin-left:auto;font-family:'Poppins',sans-serif;font-size:15px;font-weight:800;color:${(d.score??0)>=70?'var(--green)':(d.score??0)>=45?'var(--amber)':'var(--red)'};">${d.score??'&mdash;'}</span>
+          </div>
+          ${(d.issues||[]).map(i=>`<div class="opp"><div class="opp-ico" style="background:var(--red-light);border-color:#f0c0c0;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div class="opp-t" style="font-size:12px;">${i}</div></div>`).join('')}
+          ${(d.positives||[]).map(i=>`<div class="opp"><div class="opp-ico"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div><div class="opp-t" style="font-size:12px;color:var(--green-mid);">${i}</div></div>`).join('')}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function buildCompetitive(d) {
+  const comp = d.competitive || {};
+
+  // Handle no-competitors case gracefully
+  if (!comp.competitors || comp.competitors.length === 0) {
+    const isInsufficient = comp.insufficientKeywords;
+    const msg = comp.message || 'No competitors could be identified.';
+
+    const html = `
+      <div class="sec-card" style="text-align:center;padding:36px 28px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--amber-light);border:1px solid var(--amber-border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div style="font-family:'Poppins',sans-serif;font-size:16px;font-weight:700;color:var(--dark);margin-bottom:10px;">
+          ${isInsufficient ? 'Not Enough Keyword Presence for Auto-Detection' : 'No Local Competitors Identified'}
+        </div>
+        <div style="font-family:'Lato',sans-serif;font-size:14px;font-weight:300;color:var(--text-secondary);line-height:1.7;max-width:540px;margin:0 auto 20px;">${msg}</div>
+        ${isInsufficient ? `
+        <div style="background:var(--green-lighter);border:1px solid var(--border-strong);border-radius:10px;padding:16px 20px;text-align:left;max-width:480px;margin:0 auto;">
+          <div style="font-family:'Barlow',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--green-mid);margin-bottom:8px;">What This Means for the Sales Call</div>
+          <div style="font-family:'Lato',sans-serif;font-size:13px;font-weight:300;color:var(--text-secondary);line-height:1.65;">This is actually a powerful talking point. If this practice doesn't rank for enough keywords to even identify competitors, it means they are essentially <strong>invisible online</strong> — patients searching for their services are finding competitors instead. This is exactly the gap MMW programs are built to close.</div>
+        </div>
+        <div style="margin-top:16px;font-family:'Lato',sans-serif;font-size:13px;color:var(--text-muted);font-weight:300;">To run a side-by-side comparison, re-run the report with competitive analysis enabled and enter 1–3 known competitor domains manually.</div>
+        ` : ''}
+      </div>`;
+
+    document.getElementById('r_compOverview').innerHTML = html;
+    document.getElementById('r_kwBattle').innerHTML = noData('No keyword battle data available.');
+    return;
+  }
+
+  const competitors = comp.competitors || [];
+  const prospectDomain = comp.prospectDomain || '';
+  const dfs = d.dataForSeo || {};
+  const bl = dfs.backlinks || {};
+  const dov = dfs.domainOverview || {};
+
+  // ── COMPETITOR OVERVIEW TABLE ──
+  const prospectRow = `<tr style="background:var(--green-lighter);">
+    <td style="font-weight:700;color:var(--dark);">
+      <span class="badge bg" style="margin-right:6px;">Your Client</span>
+      ${prospectDomain}
+    </td>
+    <td><span class="kw-pos ${dov.totalKeywords>50?'good':dov.totalKeywords>10?'warn':'bad'}">${(dov.pos1||0)+(dov.pos2_3||0)+(dov.pos4_10||0)+(dov.pos11_20||0)+(dov.pos21_100||0)}</span></td>
+    <td><span class="kw-pos good">${dov.pos1||0}</span></td>
+    <td><span class="kw-pos ${(dov.pos1||0)+(dov.pos2_3||0)>0?'warn':'bad'}">${(dov.pos1||0)+(dov.pos2_3||0)}</span></td>
+    <td style="font-size:13px;color:var(--text-secondary);">${bl.domainRank||0}</td>
+    <td style="font-size:13px;color:var(--text-secondary);">${dov.etv?'$'+dov.etv.toFixed(2):'$0.00'}</td>
+  </tr>`;
+
+  const competitorRows = competitors.map(c => {
+    const better = c.pos1 > (dov.pos1||0);
+    return `<tr>
+      <td style="font-family:'Barlow',sans-serif;font-size:13px;color:var(--dark);">${c.domain}</td>
+      <td><span class="kw-pos ${c.totalKeywords>50?'bad':c.totalKeywords>10?'warn':'good'}">${c.totalKeywords}</span></td>
+      <td><span class="kw-pos ${c.pos1>2?'bad':c.pos1>0?'warn':'good'}">${c.pos1}</span></td>
+      <td><span class="kw-pos ${c.pos1_3>3?'bad':c.pos1_3>0?'warn':'good'}">${c.pos1_3}</span></td>
+      <td style="font-size:13px;color:var(--text-secondary);">—</td>
+      <td style="font-size:13px;color:var(--text-secondary);">${c.etv?'$'+Number(c.etv).toFixed(2):'$0.00'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('r_compOverview').innerHTML = `
+    <div class="sec-card">
+      <div class="sc-title">
+        <div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        Domain Comparison
+        <span style="margin-left:auto;font-family:'Lato',sans-serif;font-size:11px;font-weight:300;color:var(--text-muted);">Lower is better for competitors · Higher is better for client</span>
+      </div>
+      <table class="kw-table">
+        <thead><tr><th>Domain</th><th>Total Keywords</th><th>#1 Rankings</th><th>Top 3</th><th>Domain Rank</th><th>Est. Traffic Value</th></tr></thead>
+        <tbody>${prospectRow}${competitorRows}</tbody>
+      </table>
+    </div>`;
+
+  // ── KEYWORD BATTLE ──
+  const battle = comp.keywordBattle || [];
+  if (battle.length > 0) {
+    const compDomains = competitors.map(c => c.domain);
+    const headers = compDomains.map(d => `<th title="${d}">${d.replace(/\.com.*/, '.com').substring(0,18)}${d.length>18?'...':''}</th>`).join('');
+
+    const rows = battle.map(row => {
+      const pp = row.prospectPosition;
+      const pc = pp<=3?'good':pp<=10?'warn':'bad';
+      const compCells = compDomains.map(d => {
+        const cp = row.competitorPositions[d];
+        if(!cp) return `<td style="font-size:12px;color:var(--text-muted);>">&mdash;</td>`;
+        const cc = cp<=3?'good':cp<=10?'warn':'bad';
+        const better = pp && cp < pp;
+        return `<td><span class="kw-pos ${cc}" style="${better?'text-decoration:underline;':''}">#${cp}</span></td>`;
+      }).join('');
+
+      return `<tr>
+        <td><div class="kw-term">${row.keyword}</div><div style="font-size:11px;color:var(--text-muted);">${row.searchVolume?row.searchVolume.toLocaleString()+'/mo':''}</div></td>
+        <td><span class="kw-pos ${pc}">${pp?'#'+pp:'Not ranking'}</span></td>
+        ${compCells}
+      </tr>`;
+    }).join('');
+
+    document.getElementById('r_kwBattle').innerHTML = `
+      <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>Side-by-Side Rankings</div>
+      <p style="font-family:'Lato',sans-serif;font-size:12px;color:var(--text-muted);margin-bottom:14px;font-weight:300;">Based on the prospect's currently ranked keywords. Underlined competitor positions are ranking above the prospect for that keyword.</p>
+      <table class="kw-table">
+        <thead><tr><th>Keyword</th><th>Client Position</th>${headers}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  } else {
+    document.getElementById('r_kwBattle').innerHTML = noData('No overlapping keyword data found. Client may not be ranking for enough keywords to generate a comparison.');
+  }
+
+  // ── TARGET KEYWORDS ──
+  const targetData = comp.targetKeywordData || [];
+  if (targetData.length > 0) {
+    document.getElementById('r_targetKwSection').style.display = '';
+    const compDomains = competitors.map(c => c.domain);
+    const headers = compDomains.map(d => `<th title="${d}">${d.replace(/\.com.*/, '.com').substring(0,18)}${d.length>18?'...':''}</th>`).join('');
+
+    const rows = targetData.map(row => {
+      const pp = row.prospectPosition;
+      const pc = pp ? (pp<=3?'good':pp<=10?'warn':'bad') : 'bad';
+      const compCells = compDomains.map(d => {
+        const cp = row.competitorPositions[d];
+        if(!cp) return `<td style="font-size:12px;color:var(--text-muted);>">&mdash;</td>`;
+        const cc = cp<=3?'good':cp<=10?'warn':'bad';
+        return `<td><span class="kw-pos ${cc}">#${cp}</span></td>`;
+      }).join('');
+      return `<tr>
+        <td class="kw-term">${row.keyword}</td>
+        <td><span class="kw-pos ${pc}">${pp?'#'+pp:'Not ranking'}</span></td>
+        ${compCells}
+      </tr>`;
+    }).join('');
+
+    document.getElementById('r_targetKw').innerHTML = `
+      <div class="sc-title"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#28AB83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>Target Keyword Rankings</div>
+      <table class="kw-table">
+        <thead><tr><th>Keyword</th><th>Client Position</th>${headers}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+}
+
+// ── EMAIL MODAL ──
+let _emailReportData = null;
+
+function openEmailModal() {
+  if (!_emailReportData) { alert('No report loaded.'); return; }
+  const status = document.getElementById('emailStatus');
+  status.style.display = 'none';
+  document.getElementById('email_to').value = '';
+  document.getElementById('emailSendBtn').disabled = false;
+  document.getElementById('emailSendBtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Report';
+  const modal = document.getElementById('emailModal');
+  modal.style.display = 'flex';
+}
+
+function closeEmailModal() {
+  document.getElementById('emailModal').style.display = 'none';
+}
+
+function addCCField() {
+  const ccList = document.getElementById('ccList');
+  const id = 'cc_custom_' + Date.now();
+  const row = document.createElement('div');
+  row.className = 'cc-row';
+  row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  row.innerHTML = `
+    <input type="checkbox" checked style="accent-color:var(--green);width:15px;height:15px;flex-shrink:0;cursor:pointer;" id="${id}">
+    <input type="email" placeholder="email@example.com" style="flex:1;font-family:'Lato',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;outline:none;" />
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;padding:0 2px;line-height:1;">✕</button>
+  `;
+  ccList.appendChild(row);
+  row.querySelector('input[type="email"]').focus();
+}
+
+async function sendEmailReport() {
+  const to = document.getElementById('email_to').value.trim();
+  if (!to || !to.includes('@')) {
+    showEmailStatus('Please enter a valid recipient email address.', 'error');
+    return;
+  }
+
+  // Collect CC addresses
+  const ccAddresses = [];
+  if (document.getElementById('cc_lori').checked) ccAddresses.push('lori@medicalmarketingwhiz.com');
+  if (document.getElementById('cc_kat').checked)  ccAddresses.push('kat@medicalmarketingwhiz.com');
+  document.querySelectorAll('#ccList .cc-row input[type="email"]').forEach(inp => {
+    const val = inp.value.trim();
+    if (val && val.includes('@')) ccAddresses.push(val);
+  });
+
+  const btn = document.getElementById('emailSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Sending…';
+
+  try {
+    const res = await fetch('/api/send-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, cc: ccAddresses, reportData: _emailReportData }),
+    });
+    const result = await res.json();
+    if (result.success) {
+      showEmailStatus(`✓ Report sent successfully to ${to}`, 'success');
+      btn.innerHTML = '✓ Sent';
+    } else {
+      throw new Error(result.error || 'Send failed');
+    }
+  } catch(e) {
+    showEmailStatus('Failed to send: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Report';
+  }
+}
+
+function showEmailStatus(msg, type) {
+  const el = document.getElementById('emailStatus');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = type === 'success' ? 'var(--green-lighter)' : 'var(--red-light)';
+  el.style.color = type === 'success' ? 'var(--green)' : 'var(--red)';
+  el.style.border = type === 'success' ? '1px solid var(--border-strong)' : '1px solid #f0c0c0';
+}
+
+// Close email modal on backdrop click
+document.getElementById('emailModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEmailModal();
+});
+
+function resetForm(){
+  document.getElementById('reportSection').style.display='none';
+  document.getElementById('intakeSection').style.display='block';
+  document.getElementById('genBtn').disabled=false;
+  document.getElementById('errMsg').style.display='none';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── DOWNLOAD DOCX ──
+async function downloadDocx() {
+  if (!_presData) { alert('No report data available. Please generate a report first.'); return; }
+  const btn = document.getElementById('btnDocx');
+  btn.classList.add('loading');
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Building...';
+  try {
+    const res = await fetch('/api/generate-docx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_presData)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Server error');
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = (_presData.businessName || 'report').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+    a.href = url;
+    a.download = `MMW_Marketing_Analysis_${safeName}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Error generating report: ' + e.message);
+  } finally {
+    btn.classList.remove('loading');
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> Download Report';
+  }
+}
+
+// ══════════════════════════════════════════════════
+// PRESENTATION MODE
+// ══════════════════════════════════════════════════
+
+let _presSlides = [];
+let _presIndex = 0;
+let _presData = null;
+
+// ── HELPERS ──
+function pdr(label, val, cls) {
+  return `<div class="pres-dr"><span class="pres-dr-l">${label}</span><span class="pres-dr-v ${cls||''}">${val}</span></div>`;
+}
+function pbar(label, val, max, cls) {
+  const p = max > 0 ? Math.min(100, Math.round(val / max * 100)) : 0;
+  return `<div class="pres-stat-bar">
+    <div class="pres-stat-row"><span>${label}</span><span class="pres-stat-n ${cls}">${val}</span></div>
+    <div class="pres-stat-track"><div class="pres-stat-fill ${cls}" style="width:${p}%"></div></div>
+  </div>`;
+}
+function psc(v) { if(v===null||v===undefined)return'warn'; if(v>=65)return'good'; if(v>=35)return'warn'; return'bad'; }
+function presTopBar(clientName, sectionLabel) {
+  return `<div class="pres-topbar">
+    <img class="pres-topbar-logo" src="https://i0.wp.com/medicalmarketingwhiz.com/wp-content/uploads/2025/01/Medical-Marketing-Whiz-LogoWhite.png?w=1072&ssl=1" alt="Medical Marketing Whiz">
+    <span class="pres-topbar-client">${clientName}</span>
+    <span class="pres-topbar-section">${sectionLabel}</span>
+  </div>`;
+}
+
+// ── BUILD SLIDES ──
+function buildPresentationSlides(d) {
+  const p = d.places || {};
+  const we = d.websiteExtract || {};
+  const ps = d.pagespeed || {};
+  const al = d.adviceLocal?.report?.data || {};
+  const ov = al.overview?.baselineOverview || {};
+  const baseline = al.data?.baseline || {};
+  const dfs = d.dataForSeo || {};
+  const ai = d.aiVisibility || {};
+  const rec = d.recommendation || {};
+  const wa = d.websiteAudit || {};
+
+  const name = d.businessName || 'Practice';
+  const cityState = [p.city, p.state].filter(Boolean).join(', ');
+  const specialty = we.specialty || '';
+  const website = p.website || '';
+  const vis = ov.visibilityScore ?? null;
+  const nap = ov.napScore ?? null;
+  const reviews = p.reviewCount ?? 0;
+  const rating = p.rating ?? null;
+  const mobile = ps.mobile?.performanceScore ?? null;
+  const desktop = ps.desktop?.performanceScore ?? null;
+  const bl = dfs.backlinks || {};
+  const dirsFound = ov.directoriesFound ?? 0;
+  const dirsTotal = ov.directoriesTotal ?? 27;
+  const allKws = [...(dfs.targetKeywords||[]), ...(dfs.keywords||[]).filter(k=>!k.isTarget)];
+  const p1kws = allKws.filter(k => k.isPage1).length;
+  const rankedKws = allKws.filter(k => k.position && k.position > 0);
+  const allDirs = [...(baseline.locals||[]), ...(baseline.directories||[])];
+  const etv = dfs.domainOverview?.etv ?? 0;
+  const date = new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'});
+
+  function sc(v) { if(v===null||v===undefined)return''; if(v>=65)return'good'; if(v>=35)return'warn'; return'bad'; }
+
+  function metricCard(label, value, cls, sub, explain, clickable='') {
+    return `<div class="pres-metric-card ${cls} ${clickable}" ${clickable?`onclick="${clickable}()"`:''}>
+      <div class="pres-metric-label">${label}</div>
+      <div class="pres-metric-val">${value}</div>
+      ${sub?`<div class="pres-metric-sub">${sub}</div>`:''}
+      ${explain?`<div class="pres-metric-explain">${explain}</div>`:''}
+    </div>`;
+  }
+
+  const slides = [];
+
+  // ── COVER ──────────────────────────────────────────────────────────────────
+  slides.push(`
+    <div class="pres-slide pres-cover active">
+      <div style="position:relative;z-index:1;text-align:center;">
+        <img class="pres-cover-logo" src="https://i0.wp.com/medicalmarketingwhiz.com/wp-content/uploads/2025/01/Medical-Marketing-Whiz-LogoWhite.png?w=1072&ssl=1" alt="MMW">
+        <div class="pres-cover-eyebrow">Marketing Analysis &amp; Strategy Meeting</div>
+        <div class="pres-cover-name">${name}</div>
+        <div class="pres-cover-sub">${[cityState,specialty].filter(Boolean).join('  ·  ')}</div>
+        <div class="pres-cover-divider"></div>
+        <div class="pres-cover-date">${date}</div>
+      </div>
+    </div>`);
+
+  // ── SLIDE 2: PATIENT JOURNEY ───────────────────────────────────────────────
+  slides.push(`
+    <div class="pres-slide pres-content">
+      <div class="pres-overlay-modal" id="modal-journey">
+        <div class="pres-overlay-inner" style="max-width:700px;">
+          <div class="pres-overlay-header">
+            <div class="pres-overlay-title">The Patient Journey</div>
+            <button class="pres-overlay-close" onclick="closeModal('modal-journey')">✕</button>
+          </div>
+          <img src="https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b629fa2dde97427c8c44.png" style="width:100%;border-radius:8px;" alt="Patient Journey Diagram">
+        </div>
+      </div>
+      ${presTopBar(name, 'Patient Journey')}
+      <div class="pres-body">
+        <div class="pres-section-title">How Patients Are Choosing Providers in the <em>AI Era</em></div>
+        <div class="pres-section-sub">In today's digitally connected world, it's no longer just about being a great clinician — it's about how you show up online and in AI searches like ChatGPT.</div>
+        <div class="pres-journey" style="margin-bottom:16px;">
+          ${[
+            {n:'01',t:'Word of Mouth',d:'Friends, family, Facebook groups, referrals from primary care or personal trainers',hi:false},
+            {n:'02',t:'Online Research',d:'92% of patients go online to validate any recommendation — reviews, website, social proof',hi:true},
+            {n:'03',t:'Comparison Shopping',d:'Compare 3–4 providers. This can take weeks or months for elective services',hi:true},
+            {n:'04',t:'Seeking Expertise',d:'They already have a doctor — but aren\'t being heard. They want a specialist',hi:false},
+            {n:'05',t:'Book',d:'Only after trust is established do they call or schedule online',hi:false},
+          ].map(s=>`<div class="pres-journey-step${s.hi?' highlight':''}">
+            <div class="pres-journey-num">${s.n}</div>
+            <div class="pres-journey-title">${s.t}</div>
+            <div class="pres-journey-desc">${s.d}</div>
+          </div>`).join('')}
+        </div>
+        <div class="pres-callout" style="margin-bottom:12px;"><strong>The opportunity:</strong> 75% of visitors leave a website that lacks credibility or clarity. Your digital presence is either building trust — or losing patients before the phone rings.</div>
+        <div style="text-align:center;">
+          <button onclick="openModal('modal-journey')" style="background:var(--green);color:#fff;border:none;padding:8px 20px;border-radius:8px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.05em;">
+            📊 View Patient Journey Diagram
+          </button>
+        </div>
+      </div>
+    </div>`);
+
+  // ── SLIDE 3: YOUR WEBSITE ──────────────────────────────────────────────────
+  slides.push(`
+    <div class="pres-slide pres-content">
+      ${presTopBar(name, 'Your Website')}
+      <div class="pres-body">
+        <div class="pres-section-title">What Do People See When They <em>Research You?</em></div>
+        <div class="pres-section-sub">${website?`<a href="${website}" target="_blank" style="color:var(--green);text-decoration:none;font-weight:600;">${website.replace(/https?:\/\//,'')}</a> · Your website is often your first impression — and it's either building trust or losing it.`:'Website not found'}</div>
+        <div class="pres-metric-grid cols-3" style="margin-bottom:12px;">
+          ${metricCard('Est. Monthly Organic Traffic', etv>0?'~'+(Math.round(etv*12)).toLocaleString():'Minimal', sc(etv>0?(etv*12>500?75:etv*12>100?45:20):10), etv>0?'organic visits/mo':'Low organic presence', 'Organic search visits based on keyword rankings')}
+          ${metricCard('Page 1 Keywords', p1kws, sc(p1kws>=5?75:p1kws>=1?45:10), 'in Google top 10', 'Keywords where your site appears on the first page of Google')}
+          ${metricCard('Domain Rank', bl.domainRank??'N/A', sc(bl.domainRank), 'authority score', 'Your website\'s overall authority. Higher = more trust from Google')}
+        </div>
+        <div class="pres-metric-grid cols-3" style="margin-bottom:12px;">
+          ${metricCard('Mobile Performance', mobile!==null?mobile+'/100':'N/A', sc(mobile), mobile<50?'Critical':mobile<70?'Needs Work':'Good', 'Google\'s speed score for mobile. Below 50 hurts rankings directly')}
+          ${metricCard('Desktop Performance', desktop!==null?desktop+'/100':'N/A', sc(desktop), desktop<50?'Critical':desktop<70?'Needs Work':'Good', 'Speed score on desktop. Both affect where you appear in Google')}
+          ${metricCard('Page Size', ps.mobile?.pageSize||'N/A', '', 'total weight', 'Aim for under 3 MB. Heavy pages load slowly, frustrating patients')}
+        </div>
+        <div class="pres-metric-grid cols-3">
+          ${metricCard('Passing Audits', ps.mobile?.passingAudits??'N/A', sc((ps.mobile?.passingAudits||0)>30?75:(ps.mobile?.passingAudits||0)>20?45:20), 'technical checks passed', 'Google Lighthouse checks your site currently passes')}
+          ${metricCard('Failing Audits', ps.mobile?.failingAudits??'N/A', sc((ps.mobile?.failingAudits||0)<5?75:(ps.mobile?.failingAudits||0)<10?45:20), 'need to be fixed', 'Each failed audit is a specific, fixable issue MMW addresses')}
+          ${wa.topFindings?.length>0?`<div class="pres-card" style="display:flex;flex-direction:column;justify-content:center;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--green);margin-bottom:8px;">Top Findings</div>
+            ${wa.topFindings.slice(0,2).map(f=>`<div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;padding-left:10px;border-left:2px solid var(--green);">${f}</div>`).join('')}
+          </div>`:''}
+        </div>
+      </div>
+    </div>`);
+
+  // ── SLIDE 4: SEO DEEP DIVE ─────────────────────────────────────────────────
+  // Build keyword table HTML for modal
+  const kwTableRows = rankedKws.slice(0,20).map(kw => {
+    const pos = kw.position;
+    const cls = pos<=3?'good':pos<=10?'warn':'bad';
+    return `<tr>
+      <td style="font-weight:500;color:var(--dark);">${kw.keyword}</td>
+      <td><span class="pres-kw-pos ${cls}">#${pos}</span></td>
+      <td style="color:var(--text-muted);">${kw.searchVolume?kw.searchVolume.toLocaleString()+'/mo':'—'}</td>
+    </tr>`;
+  }).join('');
+
+  slides.push(`
+    <div class="pres-slide pres-content">
+      <div class="pres-overlay-modal" id="modal-keywords">
+        <div class="pres-overlay-inner">
+          <div class="pres-overlay-header">
+            <div class="pres-overlay-title">Keyword Rankings — ${rankedKws.length} Keywords Found</div>
+            <button class="pres-overlay-close" onclick="closeModal('modal-keywords')">✕</button>
+          </div>
+          ${rankedKws.length>0?`<table class="pres-kw-table">
+            <thead><tr><th>Keyword</th><th>Position</th><th>Search Volume</th></tr></thead>
+            <tbody>${kwTableRows}</tbody>
+          </table>`:'<p style="color:var(--text-muted);font-size:14px;">No ranked keywords found for this domain.</p>'}
+        </div>
+      </div>
+      ${presTopBar(name, 'SEO Deep Dive')}
+      <div class="pres-body">
+        <div class="pres-section-title">Website SEO Deep Dive: <em>Unlocking Your Full Potential</em></div>
+        <div class="pres-section-sub">A comprehensive SEO audit uncovers the hidden roadblocks preventing your website from reaching its full potential</div>
+        ${wa.overallScore!=null?`
+        <div class="pres-metric-grid cols-3" style="margin-bottom:12px;">
+          ${metricCard('SEO Foundation', wa.seo?.score!=null?wa.seo.score+'/100':'N/A', sc(wa.seo?.score), scoreLabel(wa.seo?.score), 'Title tags, meta descriptions, H1 usage, schema markup')}
+          ${metricCard('Content Quality', wa.content?.score!=null?wa.content.score+'/100':'N/A', sc(wa.content?.score), scoreLabel(wa.content?.score), 'Service descriptions, educational content, blogs, FAQs')}
+          ${metricCard('Trust & Credibility', wa.trust?.score!=null?wa.trust.score+'/100':'N/A', sc(wa.trust?.score), scoreLabel(wa.trust?.score), 'Credentials, testimonials, photos, awards')}
+        </div>
+        <div class="pres-metric-grid cols-3" style="margin-bottom:12px;">
+          ${metricCard('Conversion', wa.conversion?.score!=null?wa.conversion.score+'/100':'N/A', sc(wa.conversion?.score), scoreLabel(wa.conversion?.score), 'CTAs, booking, phone visibility, contact forms')}
+          ${metricCard('Service Coverage', wa.services?.score!=null?wa.services.score+'/100':'N/A', sc(wa.services?.score), scoreLabel(wa.services?.score), 'Dedicated pages per service for Google to rank')}
+          ${metricCard('Overall Score', wa.overallScore!=null?wa.overallScore+'/100':'N/A', sc(wa.overallScore), scoreLabel(wa.overallScore), 'Combined score across all five audit categories')}
+        </div>`:''}
+        <div class="pres-metric-grid cols-3">
+          ${metricCard('Page 1 Rankings', p1kws, sc(p1kws>=5?75:p1kws>=1?45:10), 'keywords in top 10', 'Page 1 is where 95% of search clicks happen')}
+          ${metricCard('Total Ranked Keywords', rankedKws.length, sc(rankedKws.length>=20?75:rankedKws.length>=5?45:20), 'with confirmed positions', 'Click to see all keywords →', 'openModal(\'modal-keywords\')')}
+          ${metricCard('Est. Traffic Value', etv>0?'$'+etv.toFixed(2)+'/mo':'$0.00', sc(etv>50?75:etv>10?45:20), 'equivalent ad spend', 'What you\'d pay in Google Ads for equivalent clicks')}
+        </div>
+      </div>
+    </div>`);
+
+  // ── SLIDE 5: AI & AEO ─────────────────────────────────────────────────────
+  slides.push(`
+    <div class="pres-slide pres-content">
+      ${presTopBar(name, 'AI Visibility')}
+      <div class="pres-body">
+        <div class="pres-section-title">AI &amp; ChatGPT Search: <em>The Future of Online Visibility</em></div>
+        <div class="pres-section-sub">AI search tools deliver direct answers instead of a list of websites — fundamentally changing how patients find providers.</div>
+        <div class="pres-two" style="flex:1;gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:2px;">Simulated AI Search Results</div>
+            ${(ai.queries||[]).slice(0,2).map(q=>`<div class="pres-ai-box ${q.appears?'found':'not-found'}">
+              <div class="pres-ai-lbl">Query: "${q.q||q.query||''}"</div>
+              <div class="pres-ai-txt">${q.result||q.response||''}</div>
+              <div class="pres-ai-result ${q.appears?'found':'not-found'}">${q.appears?'✓ Business appears in results':'✗ Business does NOT appear in results'}</div>
+            </div>`).join('')}
+            ${ai.reasons?`<div class="pres-callout"><strong>Why you're not appearing:</strong> ${ai.reasons}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <img src="https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6293ffd8cf7a0ec5ee3.png" style="width:100%;border-radius:10px;border:1px solid var(--border);" alt="SEO vs AEO">
+            <div class="pres-card" style="flex:1;">
+              <div class="pres-card-title">Answer Engine Optimization (AEO)</div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.65;">AEO prioritizes answering questions clearly and authoritatively — so AI platforms like ChatGPT recommend your practice. Every MMW program includes FAQ schema, structured data, and authority-building that signals to AI that you are the trusted local expert.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+
+  // ── SLIDE 6: GOOGLE RANKINGS ───────────────────────────────────────────────
+  slides.push(`
+    <div class="pres-slide pres-content">
+      ${presTopBar(name, 'Google Rankings')}
+      <div class="pres-body">
+        <div class="pres-section-title">Are You Showing Up in the <em>TOP 3</em> in Google Search?</div>
+        <div class="pres-section-sub">90% of clicks go to the top 3 listings. Ranking organically means you don't pay Google a cent for ads.</div>
+        <div class="pres-two" style="flex:1;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <img src="https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b62924c2b28f0390da30.png" style="width:100%;border-radius:10px;border:1px solid var(--border);" alt="What Drives Rankings">
+            <div class="pres-card">
+              <div class="pres-card-title">Ranking Factors Breakdown</div>
+              ${[
+                {label:'Google Business Profile',pct:30},
+                {label:'On-Page SEO & Website Content',pct:26},
+                {label:'Links & Citations',pct:17},
+                {label:'Reviews (qty, quality, frequency)',pct:13},
+                {label:'Behavioral Signals',pct:11},
+              ].map(f=>`<div class="pres-factor">
+                <div class="pres-factor-label">${f.label}</div>
+                <div class="pres-factor-bar"><div class="pres-factor-fill" style="width:${f.pct*2.5}%"></div></div>
+                <div class="pres-factor-pct">${f.pct}%</div>
+              </div>`).join('')}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="pres-card">
+              <div class="pres-card-title">Google Business Profile Report</div>
+              ${[
+                {l:'GBP Claimed',v:p.placeId?'Yes ✓':'Not confirmed',c:p.placeId?'good':'bad'},
+                {l:'Business Name',v:p.name||name,c:''},
+                {l:'Address',v:p.formattedAddress||'Not found',c:''},
+                {l:'Phone',v:p.phone||'Not found',c:p.phone?'good':'bad'},
+                {l:'Website Listed',v:website?'Yes ✓':'Not found',c:website?'good':'bad'},
+              ].map(r=>`<div class="pres-dr"><span class="pres-dr-l">${r.l}</span><span class="pres-dr-v ${r.c}">${r.v}</span></div>`).join('')}
+            </div>
+            <div class="pres-metric-grid cols-2">
+              ${metricCard('Visibility Score', vis!==null?vis+'%':'N/A', sc(vis), scoreLabel(vis), 'Overall local presence')}
+              ${metricCard('NAP Consistency', nap!==null?nap+'%':'N/A', sc(nap), nap<40?'Critical':nap<70?'Issues':'Consistent', 'Name, Address, Phone accuracy')}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+
+  // ── SLIDE 7: REVIEWS ───────────────────────────────────────────────────────
+  const both = reviews>=100&&rating>=4.8;
+  const revOk = reviews>=30||(rating&&rating>=4.0);
+  const revCls = both?'good':revOk?'warn':'bad';
+  slides.push(`
+    <div class="pres-slide pres-content">
+      ${presTopBar(name, 'Online Reputation')}
+      <div class="pres-body">
+        <div class="pres-section-title">Online Reputation / <em>Google Reviews</em></div>
+        <div class="pres-section-sub">92% of patients read reviews before choosing a provider. Goal: 100+ Reviews | 4.8+ Stars | Ongoing Responses</div>
+        <div class="pres-two" style="flex:1;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="pres-metric-card ${revCls}" style="text-align:center;padding:28px 20px;">
+              <div class="pres-metric-label">Google Review Performance</div>
+              <div style="font-family:'Poppins',sans-serif;font-size:52px;font-weight:800;line-height:1;color:${both?'var(--green)':revOk?'var(--amber)':'var(--red)'};">${rating?rating+' ★':'—'}</div>
+              <div style="font-size:16px;color:var(--text-secondary);margin:4px 0;">(${reviews} reviews)</div>
+              <div style="font-size:13px;font-weight:700;color:${both?'var(--green)':revOk?'var(--amber)':'var(--red)'};">${both?'✓ Excellent — Meeting Goals':revOk?'⚠ Developing — Needs Growth':'✗ Critical — Immediate Action Needed'}</div>
+            </div>
+            <div class="pres-stat-bar">
+              <div class="pres-stat-row"><span>Review Count Progress</span><span class="pres-stat-n ${revCls}">${reviews} / 100 goal</span></div>
+              <div class="pres-stat-track"><div class="pres-stat-fill ${revCls}" style="width:${Math.min(100,reviews)}%"></div></div>
+            </div>
+          </div>
+          <div class="pres-card" style="display:flex;flex-direction:column;gap:0;">
+            <div class="pres-card-title">Review Checklist</div>
+            ${[
+              {l:'Over 100 Google reviews',ok:reviews>=100},
+              {l:'Over 4.8 star rating',ok:rating>=4.8},
+              {l:'Consistently getting new reviews',ok:false},
+              {l:'Responding to all reviews',ok:false},
+              {l:'Automated review requests in place',ok:false},
+            ].map(i=>`<div class="pres-dr"><span class="pres-dr-l">${i.l}</span><span class="pres-dr-v ${i.ok?'good':'bad'}">${i.ok?'✓':'✗'}</span></div>`).join('')}
+            <div class="pres-callout" style="margin-top:14px;font-size:12px;"><strong>MMW automates this:</strong> Automated review requests via text &amp; email, custom QR codes, and ongoing monitoring included in every program.</div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+
+  // ── SLIDE 8: CITATIONS ─────────────────────────────────────────────────────
+  slides.push(`
+    <div class="pres-slide pres-content">
+      ${presTopBar(name, 'Local & Citations')}
+      <div class="pres-body">
+        <div class="pres-section-title">Online Visibility: <em>Citations &amp; Directory Listings</em></div>
+        <div class="pres-section-sub">Consistent NAP (Name, Address, Phone) across the web signals legitimacy to Google and AI platforms. Inconsistencies hurt your local rankings.</div>
+        <div class="pres-metric-grid cols-3" style="margin-bottom:14px;">
+          ${metricCard('Visibility Score', vis!==null?vis+'%':'N/A', sc(vis), scoreLabel(vis), 'Overall local presence score across all platforms')}
+          ${metricCard('NAP Consistency', nap!==null?nap+'%':'N/A', sc(nap), nap!==null&&nap<40?'Critical':nap!==null&&nap<70?'Issues Found':'Consistent', 'Name, Address, Phone accuracy across directories')}
+          ${metricCard('Directories Found', dirsFound+'/'+dirsTotal, sc(dirsFound>=20?75:dirsFound>=10?45:15), (dirsTotal-dirsFound)+' missing', 'Key directories where your practice should be listed')}
+        </div>
+        <div class="pres-card" style="flex:1;">
+          <div class="pres-card-title">Directory Presence <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:8px;">Green = found · Red = missing</span></div>
+          <div class="pres-dir-wrap">
+            ${allDirs.slice(0,20).map(dir=>`<div class="pres-di ${dir.found?'found':'missing'}">
+              <div class="pres-di-dot"></div>
+              ${dir.directory||dir.name||'Directory'}
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`);
+
+  // ── SLIDE 9: HOW MMW IS DIFFERENT ─────────────────────────────────────────
+  slides.push(`
+    <div class="pres-slide pres-content">
+      ${presTopBar(name, 'About MMW')}
+      <div class="pres-body">
+        <div class="pres-section-title">🌟 How <em>Medical Marketing Whiz</em> is Different 🌟</div>
+        <div class="pres-section-sub">Our entire approach is specifically tailored to the distinct needs of specialized healthcare practices</div>
+        <div class="pres-two" style="flex:1;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <img src="https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6293ffd8cf7a0ec5edc.png" style="width:100%;border-radius:10px;border:1px solid var(--border);" alt="MMW Team">
+            <div class="pres-callout" style="font-size:12px;font-style:italic;">"I've been in thousands of doctors' offices and surgical procedures. This experience helps me understand what makes some offices more successful than others." <strong>— Lori Werner, Founder</strong></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="pres-card">
+              <div class="pres-card-title">A Strategic Advantage: Our Woman-Led Team</div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.65;margin-bottom:10px;">Women are often the healthcare decision-makers in their households. They do their research, read reviews, and ask for recommendations. Our team deeply understands these patients.</div>
+              ${['GBP & off-page SEO and AEO optimization','Professional WordPress website design','Email marketing, webinars & educational events','Authentic social media content strategy','Press releases & authority building'].map(t=>`<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);">
+                <span style="color:var(--green);font-weight:700;">✓</span>${t}</div>`).join('')}
+            </div>
+            <div class="pres-callout" style="font-size:12px;"><strong>"Patients want specialists with good reviews and testimonials.</strong> They value education and appreciate providers who share their knowledge and expertise."</div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+
+  // ── SLIDE 10: RECOMMENDATION ──────────────────────────────────────────────
+  const recommended = rec.recommended || 'Practice Pro';
+  const programImages = {
+    'Smart Start':      'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6298c83fdca504f14b1.png',
+    'Practice Pro':     'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b5fd3d829c73b270a9e9.png',
+    'The Whiz Works':   'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b629fa2dde97427c8c45.png',
+  };
+  const programs = [
+    {key:'Smart Start',   price:'$1,997/mo', desc:'Ideal for newer or smaller offices needing a solid marketing foundation — SEO, local visibility, and patient discovery.'},
+    {key:'Practice Pro',  price:'$2,997/mo', desc:'For established clinics ready to streamline lead generation, add automation, and consistently attract new patients.'},
+    {key:'The Whiz Works',price:'$4,497/mo', desc:'Full-funnel done-for-you system combining SEO, ads, PR, events, and creative strategy to dominate your market.'},
+  ];
+  slides.push(`
+    <div class="pres-slide pres-content">
+      <div class="pres-overlay-modal" id="modal-program">
+        <div class="pres-overlay-inner" style="max-width:680px;">
+          <div class="pres-overlay-header">
+            <div class="pres-overlay-title" id="modal-program-title">Program Details</div>
+            <button class="pres-overlay-close" onclick="closeModal('modal-program')">✕</button>
+          </div>
+          <img id="modal-program-img" src="" style="width:100%;border-radius:8px;" alt="Program Details">
+        </div>
+      </div>
+      ${presTopBar(name, 'Recommendation')}
+      <div class="pres-body">
+        <div class="pres-section-title">Services Recommendation <em>Based On The Data</em></div>
+        <div class="pres-section-sub">Click any program card to see exactly what's included</div>
+        ${rec.main_reason?`<div class="pres-callout" style="margin-bottom:14px;"><strong>Recommended: ${recommended}</strong><br><span style="font-weight:400;font-size:12px;">${rec.main_reason}</span></div>`:''}
+        <div class="pres-rec-grid">
+          ${programs.map(prog=>`<div class="pres-rec-card ${prog.key===recommended?'recommended':''}" onclick="showProgramImage('${prog.key}','${programImages[prog.key]}')">
+            <div class="pres-rec-badge">${prog.key===recommended?'★ Recommended':prog.key}</div>
+            <div class="pres-rec-name">${prog.key}</div>
+            <div class="pres-rec-price">${prog.price} · 12-month</div>
+            <div class="pres-rec-text">${prog.desc}</div>
+            <div class="pres-rec-hint">Click to see what's included →</div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>`);
+
+  // ── SLIDE 11: CLOSE ───────────────────────────────────────────────────────
+  slides.push(`
+    <div class="pres-slide pres-cover">
+      <div style="position:relative;z-index:1;text-align:center;max-width:640px;padding:0 24px;">
+        <img class="pres-cover-logo" src="https://i0.wp.com/medicalmarketingwhiz.com/wp-content/uploads/2025/01/Medical-Marketing-Whiz-LogoWhite.png?w=1072&ssl=1" alt="MMW">
+        <div class="pres-cover-eyebrow">Ready to Get Started?</div>
+        <div class="pres-cover-name" style="font-size:38px;line-height:1.15;">Become the #1 Go-To Provider<br>in Your Area</div>
+        <div class="pres-cover-divider"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:28px;">
+          ${[
+            {icon:'📞',label:'Call Us',val:'(888) 418-8065'},
+            {icon:'📧',label:'Email',val:'lori@medicalmarketingwhiz.com'},
+            {icon:'📅',label:'Schedule',val:'medmarketingwhiz.com/meet-with-lori'},
+          ].map(c=>`<div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:16px 12px;">
+            <div style="font-size:22px;margin-bottom:8px;">${c.icon}</div>
+            <div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:4px;">${c.label}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;word-break:break-all;">${c.val}</div>
+          </div>`).join('')}
+        </div>
+        <div class="pres-cover-date">All programs are a 12-month commitment · We only work with one office per specialty per area</div>
+      </div>
+    </div>`);
+
+  return slides;
+}
+
+// Helper used in slides
+function scoreLabel(v) { if(v===null||v===undefined)return'N/A'; return v>=65?'Good':v>=35?'Needs Work':'Critical'; }
+
+// ── MODAL HELPERS ──
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('open');
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+function showProgramImage(programName, imgUrl) {
+  document.getElementById('modal-program-title').textContent = programName + ' — What\'s Included';
+  document.getElementById('modal-program-img').src = imgUrl;
+  openModal('modal-program');
+}
+
+// Close modal on backdrop click
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('pres-overlay-modal')) {
+    e.target.classList.remove('open');
+  }
+});
+
+// ── PRESENTATION CONTROLLER ──
+function startPresentation() {
+  if (!_presData) { alert('No report data loaded yet.'); return; }
+  _presSlides = buildPresentationSlides(_presData);
+  _presIndex = 0;
+
+  const stage = document.getElementById('presStage');
+  stage.innerHTML = _presSlides.join('');
+
+  renderPresSlide(0);
+  updatePresNav();
+
+  const overlay = document.getElementById('presentationOverlay');
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Keyboard navigation
+  document.addEventListener('keydown', presKeyHandler);
+}
+
+function endPresentation() {
+  document.getElementById('presentationOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+  document.removeEventListener('keydown', presKeyHandler);
+}
+
+function presKeyHandler(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); presNav(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); presNav(-1); }
+  if (e.key === 'Escape') endPresentation();
+}
+
+function presNav(dir) {
+  const slides = document.querySelectorAll('.pres-slide');
+  const total = slides.length;
+  const newIndex = Math.max(0, Math.min(total - 1, _presIndex + dir));
+  if (newIndex === _presIndex) return;
+  _presIndex = newIndex;
+  renderPresSlide(_presIndex);
+  updatePresNav();
+}
+
+function renderPresSlide(idx) {
+  const slides = document.querySelectorAll('.pres-slide');
+  slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+}
+
+function updatePresNav() {
+  const slides = document.querySelectorAll('.pres-slide');
+  const total = slides.length;
+  const prev = document.getElementById('presBtnPrev');
+  const next = document.getElementById('presBtnNext');
+  if (prev) prev.disabled = _presIndex === 0;
+  if (next) {
+    next.textContent = _presIndex === total - 1 ? 'Finish' : 'Next ›';
+    next.innerHTML = _presIndex === total - 1
+      ? 'Finish <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+      : 'Next <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+    if (_presIndex === total - 1) { next.onclick = endPresentation; } else { next.onclick = () => presNav(1); }
+  }
+
+  // Progress dots
+  const prog = document.getElementById('presProgress');
+  if (prog) {
+    prog.innerHTML = Array.from({ length: total }, (_, i) =>
+      `<div class="pres-prog-dot ${i === _presIndex ? 'active' : ''}" onclick="presGoto(${i})" title="Slide ${i+1}"></div>`
+    ).join('');
+  }
+}
+
+function presGoto(idx) {
+  _presIndex = idx;
+  renderPresSlide(idx);
+  updatePresNav();
+}
+
+// ── CAPTURE DATA FOR PRESENTATION (patched into generateReport flow) ──
+// _presData is set directly in the generateReport success handler below via presCapture()
+function presCapture(d) { _presData = d; _emailReportData = d; }
+</script>
+</body>
+</html>
