@@ -1908,12 +1908,11 @@ function buildReport(d){
 
   // ── RECOMMENDATION ──
   const programs=[
-    {key:'Smart Start',price:'$1,997/mo',reason:rec.smart_start_reason||''},
-    {key:'Practice Pro',price:'$2,997/mo',reason:rec.practice_pro_reason||''},
-    {key:'Whiz Works',price:'$4,497/mo',reason:rec.whiz_works_reason||''},
+    {key:'Smart Start',price:'$2,497/mo + $1,997 setup',reason:rec.smart_start_reason||''},
+    {key:'Practice Pro',price:'$3,497/mo + $2,497 setup',reason:rec.practice_pro_reason||''},
+    {key:'Whiz Works',price:'$5,497/mo + $2,997 setup',reason:rec.whiz_works_reason||''},
   ];
   const recommended=rec.recommended||'Practice Pro';
-  const fitScore=rec.fit_score||75;
   document.getElementById('r_rec').innerHTML=programs.map(prog=>{
     const isRec=prog.key===recommended;
     return`<div class="rec-card ${isRec?'recommended':''}">
@@ -1921,7 +1920,6 @@ function buildReport(d){
       <div class="rec-name">${prog.key}</div>
       <div class="rec-price">${prog.price} · 12-month commitment</div>
       <div class="rec-reason-text">${prog.reason}</div>
-      ${isRec?`<div class="rec-fit"><div class="rec-fit-lbl">Fit score: ${fitScore}%</div><div class="rec-fit-track"><div class="rec-fit-fill" style="width:${fitScore}%"></div></div></div>`:''}
     </div>`;
   }).join('');
   document.getElementById('r_recReason').textContent=rec.main_reason||'';

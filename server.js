@@ -1075,9 +1075,9 @@ Analysis scores:
 - Referring domains: ${scores.referringDomains ?? 'unknown'}
 
 Programs:
-- Smart Start: $1,997/mo — SEO/AEO, website, GBP optimization, 40+ citations, review generation. Foundation only — no ads.
-- Practice Pro: $2,997/mo — Everything in Smart Start PLUS ads management, reputation management, events/webinars, email newsletter, social platform.
-- Whiz Works: $4,497/mo — Everything in Practice Pro PLUS photo/video package, monthly press releases, additional ad campaigns, Top Doctor Magazine feature.
+- Smart Start: $2,497/mo + $1,997 One Time Setup Fee due at signing — SEO/AEO, website, GBP optimization, 40+ citations, review generation. Foundation only — no ads.
+- Practice Pro: $3,497/mo + $2,497 One Time Setup Fee due at signing — Everything in Smart Start PLUS ads management, reputation management, events/webinars, email newsletter, social platform.
+- Whiz Works: $5,497/mo + $2,997 One Time Setup Fee due at signing — Everything in Practice Pro PLUS photo/video package, monthly press releases, additional ad campaigns, Top Doctor Magazine feature.
 
 CRITICAL RECOMMENDATION LOGIC — follow this exactly:
 The default recommendation for most practices should be Practice Pro, not Smart Start. Here is the reasoning you must apply:
