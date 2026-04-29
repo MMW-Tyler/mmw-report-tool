@@ -3,7 +3,9 @@ const express = require('express');
 const fetch = require('node-fetch');
 const cors = require('cors');
 const path = require('path');
+const session = require('express-session');
 const { generateReport: generateDocxReport } = require('./generate-docx');
+const authRouter = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,6 +13,35 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Session middleware — MemoryStore is fine for single-dyno v1
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 8 * 60 * 60 * 1000, // 8 hours
+  },
+}));
+
+// ─────────────────────────────────────────────
+// HEALTHCHECK — Render requires this endpoint
+// ─────────────────────────────────────────────
+app.get('/healthz', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// ─────────────────────────────────────────────
+// INTERNAL AUTH
+// ─────────────────────────────────────────────
+app.use('/auth', authRouter);
+
+app.get('/login', (req, res) => {
+  if (req.session?.userId) return res.redirect('/dashboard');
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const AL_KEY = process.env.ADVICE_LOCAL_API_KEY;
