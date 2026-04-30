@@ -20,10 +20,10 @@ async function seedAdmin() {
   const { data, error } = await supabase
     .from('team_users')
     .upsert(
-      { email: email.toLowerCase().trim(), name, role: 'admin', password_hash, is_active: true },
+      { email: email.toLowerCase().trim(), full_name: name, role: 'admin', password_hash, active: true },
       { onConflict: 'email' }
     )
-    .select('id, email, name, role')
+    .select('id, email, full_name, role')
     .single();
 
   if (error) {

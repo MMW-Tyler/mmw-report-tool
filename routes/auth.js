@@ -14,11 +14,11 @@ router.post('/login', async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from('team_users')
-      .select('id, email, name, role, password_hash, is_active')
+      .select('id, email, full_name, role, password_hash, active')
       .eq('email', email.toLowerCase().trim())
       .single();
 
-    if (error || !user || !user.is_active) {
+    if (error || !user || !user.active) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -29,7 +29,7 @@ router.post('/login', async (req, res) => {
 
     req.session.userId = user.id;
     req.session.email  = user.email;
-    req.session.name   = user.name;
+    req.session.name   = user.full_name;
     req.session.role   = user.role;
 
     res.json({ ok: true, role: user.role, name: user.name });

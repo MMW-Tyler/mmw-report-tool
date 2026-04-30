@@ -7,10 +7,11 @@ create extension if not exists "pgcrypto";
 create table team_users (
   id            uuid primary key default gen_random_uuid(),
   email         text not null unique,
-  name          text not null,
+  full_name     text not null,
   role          text not null check (role in ('admin', 'ae')),
   password_hash text not null,
-  is_active     boolean not null default true,
+  active        boolean not null default true,
+  last_login_at timestamptz,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
