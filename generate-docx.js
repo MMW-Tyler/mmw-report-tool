@@ -68,9 +68,6 @@ const IMAGE_URLS = {
   seo_vs_aeo:           'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6293ffd8cf7a0ec5ee3.png',
   what_drives_rankings: 'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b62924c2b28f0390da30.png',
   account_manager:      'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6293ffd8cf7a0ec5edc.png',
-  whiz_works:           'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b629fa2dde97427c8c45.png',
-  practice_pro:         'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b5fd3d829c73b270a9e9.png',
-  smart_start:          'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6298c83fdca504f14b1.png',
   deal_breakers:        'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b62917d86ef0ca0f010b.png',
   awards:               'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6297f66a68b7bc45541.png',
   review_1:             'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6297f66a68b7bc45542.png',
@@ -1022,7 +1019,18 @@ async function generateReport(data) {
 
   // ── PROGRAMS ──────────────────────────────────────────────────────────────
   const programW = IMG_W;
-  const programH = 349; // 3.63 inches × 96dpi = 349px
+
+  const programLink = (name, url) => new Paragraph({
+    spacing: { before: 80, after: 80, line: 288 },
+    children: [
+      new ExternalHyperlink({
+        link: url,
+        children: [
+          new TextRun({ text: name, size: SZ_BODY, font: F_BODY, bold: true, color: GREEN, underline: { type: UnderlineType.SINGLE } }),
+        ],
+      }),
+    ],
+  });
 
   const programSection = [
     sectionHeading('OUR MARKETING PROGRAMS'),
@@ -1041,11 +1049,12 @@ async function generateReport(data) {
     bullet('Offices that don\'t have the staff in place to ensure a great patient experience.'),
     bullet('People who aren\'t ready to take action yet. Thinking you\'ll wait to invest in your marketing until you get more patients is like the cart before the horse.'),
     spacer(10),
-    centeredImage(imgs.smart_start,  programW, programH, 'png'),
-    spacer(8),
-    centeredImage(imgs.practice_pro, programW, programH, 'png'),
-    spacer(8),
-    centeredImage(imgs.whiz_works,   programW, programH, 'png'),
+    subHeading('Program Details:'),
+    body('Click any program below to view the full details:'),
+    spacer(2),
+    programLink('The Whiz Works Program', 'https://docs.google.com/document/d/1OB59FRIbN1RW0ZbWGFTYNDXSLi6JwsaWB3tNMj9QbZ8/edit?tab=t.0'),
+    programLink('The Practice Pro Program', 'https://docs.google.com/document/d/1aRVxkDSdOtbQ5nmAjjXjmB-AHsQlRqpXQjeiUiYu0qg/edit?tab=t.0'),
+    programLink('The Smart Start Program', 'https://docs.google.com/document/d/1SsvRZnc6R5Ba6lh38JejGDxEzYfQrYhRKMWpy05Plg4/edit?tab=t.0'),
     spacer(12),
     centeredImage(imgs.deal_breakers, programW, 350, 'png'),
     spacer(12),

@@ -2686,10 +2686,10 @@ function buildPresentationSlides(d) {
 
   // ── SLIDE 10: RECOMMENDATION ──────────────────────────────────────────────
   const recommended = rec.recommended || 'Practice Pro';
-  const programImages = {
-    'Smart Start':      'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6298c83fdca504f14b1.png',
-    'Practice Pro':     'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b5fd3d829c73b270a9e9.png',
-    'The Whiz Works':   'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b629fa2dde97427c8c45.png',
+  const programLinks = {
+    'Smart Start':      'https://docs.google.com/document/d/1SsvRZnc6R5Ba6lh38JejGDxEzYfQrYhRKMWpy05Plg4/edit?tab=t.0',
+    'Practice Pro':     'https://docs.google.com/document/d/1aRVxkDSdOtbQ5nmAjjXjmB-AHsQlRqpXQjeiUiYu0qg/edit?tab=t.0',
+    'The Whiz Works':   'https://docs.google.com/document/d/1OB59FRIbN1RW0ZbWGFTYNDXSLi6JwsaWB3tNMj9QbZ8/edit?tab=t.0',
   };
   const programs = [
     {key:'Smart Start',   price:'$1,997/mo', desc:'Ideal for newer or smaller offices needing a solid marketing foundation — SEO, local visibility, and patient discovery.'},
@@ -2698,27 +2698,18 @@ function buildPresentationSlides(d) {
   ];
   slides.push(`
     <div class="pres-slide pres-content">
-      <div class="pres-overlay-modal" id="modal-program">
-        <div class="pres-overlay-inner" style="max-width:680px;">
-          <div class="pres-overlay-header">
-            <div class="pres-overlay-title" id="modal-program-title">Program Details</div>
-            <button class="pres-overlay-close" onclick="closeModal('modal-program')">✕</button>
-          </div>
-          <img id="modal-program-img" src="" style="width:100%;border-radius:8px;" alt="Program Details">
-        </div>
-      </div>
       ${presTopBar(name, 'Recommendation')}
       <div class="pres-body">
         <div class="pres-section-title">Services Recommendation <em>Based On The Data</em></div>
-        <div class="pres-section-sub">Click any program card to see exactly what's included</div>
+        <div class="pres-section-sub">Click any program card to view the full program details</div>
         ${rec.main_reason?`<div class="pres-callout" style="margin-bottom:14px;"><strong>Recommended: ${recommended}</strong><br><span style="font-weight:400;font-size:12px;">${rec.main_reason}</span></div>`:''}
         <div class="pres-rec-grid">
-          ${programs.map(prog=>`<div class="pres-rec-card ${prog.key===recommended?'recommended':''}" onclick="showProgramImage('${prog.key}','${programImages[prog.key]}')">
+          ${programs.map(prog=>`<div class="pres-rec-card ${prog.key===recommended?'recommended':''}" onclick="openProgramLink('${programLinks[prog.key]}')">
             <div class="pres-rec-badge">${prog.key===recommended?'★ Recommended':prog.key}</div>
             <div class="pres-rec-name">${prog.key}</div>
             <div class="pres-rec-price">${prog.price} · 12-month</div>
             <div class="pres-rec-text">${prog.desc}</div>
-            <div class="pres-rec-hint">Click to see what's included →</div>
+            <div class="pres-rec-hint">Click to view full program details →</div>
           </div>`).join('')}
         </div>
       </div>
@@ -2762,10 +2753,8 @@ function closeModal(id) {
   const el = document.getElementById(id);
   if (el) el.classList.remove('open');
 }
-function showProgramImage(programName, imgUrl) {
-  document.getElementById('modal-program-title').textContent = programName + ' — What\'s Included';
-  document.getElementById('modal-program-img').src = imgUrl;
-  openModal('modal-program');
+function openProgramLink(url) {
+  if (url) window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 // Close modal on backdrop click
