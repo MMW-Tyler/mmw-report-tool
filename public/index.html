@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Marketing Analysis Report — Medical Marketing Whiz</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Barlow:wght@300;400;500;600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Barlow:wght@300;400;500;600&family=Lato:wght@300;400;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -491,6 +491,200 @@ input::placeholder { color: #b8c8cc; }
 .pres-ai-result.not-found { color: var(--red); }
 .pres-ai-result.found     { color: var(--green); }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   PRESENTATION — TIER 1+2 TECH-FORWARD POLISH
+   Aligns presentation aesthetic with the MMW Tools Hub:
+   warm-light bg + circuit grid, JetBrains Mono chrome,
+   gradient cards with green-glow shadows, status pips, mono nav counter.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --pres-bg: #f5faf8;
+  --pres-grid: rgba(40,171,131,0.07);
+  --pres-grid-strong: rgba(40,171,131,0.20);
+  --pres-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --pres-shadow-deep: rgba(20,60,50,0.08);
+  --pres-text-bright: #0d2128;
+}
+
+#presentationOverlay { background: var(--pres-bg); }
+.pres-content { background: var(--pres-bg); position: relative; }
+
+/* Circuit grid + radial vignette behind every content slide */
+.pres-content::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(var(--pres-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pres-grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.pres-content::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse at center, transparent 0%, var(--pres-bg) 80%);
+}
+.pres-content > .pres-topbar,
+.pres-content > .pres-body { position: relative; z-index: 1; }
+
+/* Body text → Lato 300 for editorial feel */
+.pres-body { font-family: 'Lato', sans-serif; font-weight: 300; color: var(--text-secondary); }
+
+/* Mono eyebrow above each section title */
+.pres-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  align-self: flex-start;
+  font-family: var(--pres-mono);
+  font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--green-mid);
+  background: rgba(40,171,131,0.06);
+  border: 1px solid rgba(40,171,131,0.22);
+  padding: 5px 12px; border-radius: 4px;
+  margin-bottom: 14px;
+  width: max-content;
+}
+.pres-eyebrow::before { content: '◆'; color: var(--green-mid); font-size: 8px; }
+
+.pres-section-title { color: var(--pres-text-bright); }
+.pres-section-title em { color: var(--green-mid); }
+.pres-section-sub { font-family: 'Lato', sans-serif; font-weight: 300; color: var(--text-muted); }
+
+/* Top bar: pulsing pip on section badge + mono slide counter */
+.pres-topbar-section {
+  font-family: var(--pres-mono);
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 10px; letter-spacing: 0.16em;
+}
+.pres-topbar-section::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 8px var(--green);
+  animation: pulse 2.2s infinite;
+}
+.pres-topbar-right { display: flex; align-items: center; gap: 14px; }
+.pres-topbar-counter {
+  font-family: var(--pres-mono);
+  font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+}
+
+/* Cards: gradient + green-tinted layered shadow */
+.pres-card {
+  background: linear-gradient(160deg, #ffffff 0%, var(--green-lighter) 100%);
+  border: 1px solid rgba(40,171,131,0.18);
+  box-shadow:
+    0 0 0 1px rgba(40,171,131,0.05),
+    0 6px 20px var(--pres-shadow-deep),
+    0 2px 6px rgba(20,60,50,0.04);
+}
+.pres-card-title { font-family: 'Poppins', sans-serif; color: var(--pres-text-bright); }
+
+/* Metric cards: gradient, glow tint by status, status pip in corner.
+   Keeps the 4px colored top border from the base rule. */
+.pres-metric-card {
+  background: linear-gradient(160deg, #ffffff 0%, var(--green-lighter) 100%);
+  border-left-color: rgba(40,171,131,0.15);
+  border-right-color: rgba(40,171,131,0.15);
+  border-bottom-color: rgba(40,171,131,0.15);
+  box-shadow:
+    0 0 0 1px rgba(40,171,131,0.05),
+    0 4px 14px var(--pres-shadow-deep);
+}
+.pres-metric-card.good {
+  box-shadow:
+    0 0 0 1px rgba(40,171,131,0.08),
+    0 4px 14px var(--pres-shadow-deep),
+    0 0 30px rgba(40,171,131,0.10);
+}
+.pres-metric-card.warn {
+  box-shadow:
+    0 0 0 1px rgba(217,119,6,0.10),
+    0 4px 14px var(--pres-shadow-deep),
+    0 0 30px rgba(217,119,6,0.10);
+}
+.pres-metric-card.bad {
+  box-shadow:
+    0 0 0 1px rgba(224,84,84,0.10),
+    0 4px 14px var(--pres-shadow-deep),
+    0 0 30px rgba(224,84,84,0.10);
+}
+.pres-metric-card::before {
+  content: ''; position: absolute; top: 10px; right: 12px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border-strong);
+  box-shadow: 0 0 0 2px #fff;
+  z-index: 2; pointer-events: none;
+}
+.pres-metric-card.good::before { background: var(--green);     box-shadow: 0 0 0 2px #fff, 0 0 8px rgba(40,171,131,0.55); }
+.pres-metric-card.warn::before { background: var(--amber);     box-shadow: 0 0 0 2px #fff, 0 0 8px rgba(217,119,6,0.55); }
+.pres-metric-card.bad::before  { background: var(--red);       box-shadow: 0 0 0 2px #fff, 0 0 8px rgba(224,84,84,0.55); }
+.pres-metric-label { font-family: var(--pres-mono); font-weight: 500; letter-spacing: 0.16em; }
+.pres-metric-card:not(.good):not(.warn):not(.bad) .pres-metric-val { color: var(--pres-text-bright); }
+.pres-metric-explain { font-family: 'Lato', sans-serif; font-weight: 300; }
+
+/* Recommendation cards: node-panel treatment */
+.pres-rec-card {
+  background: linear-gradient(160deg, #ffffff 0%, var(--green-lighter) 100%);
+  border: 1px solid rgba(40,171,131,0.18);
+  box-shadow:
+    0 0 0 1px rgba(40,171,131,0.05),
+    0 6px 20px var(--pres-shadow-deep);
+}
+.pres-rec-card.recommended {
+  border: 2px solid var(--green);
+  background: linear-gradient(160deg, #ffffff 0%, var(--green-lighter) 100%);
+  box-shadow:
+    0 0 0 1px rgba(40,171,131,0.12),
+    0 8px 30px var(--pres-shadow-deep),
+    0 0 60px rgba(40,171,131,0.18);
+}
+.pres-rec-name  { color: var(--pres-text-bright); }
+.pres-rec-badge { font-family: var(--pres-mono); letter-spacing: 0.16em; }
+.pres-rec-hint  { font-family: var(--pres-mono); letter-spacing: 0.16em; }
+
+/* Bottom nav: ghost/outlined buttons + mono counter */
+.pres-nav {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--pres-grid-strong);
+}
+.pres-nav-btn {
+  font-family: var(--pres-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+.pres-nav-btn:hover {
+  background: var(--green-lighter);
+  color: var(--pres-text-bright);
+  border-color: var(--green-mid);
+}
+.pres-nav-btn.primary {
+  background: var(--green-mid); border-color: var(--green-mid); color: #fff;
+  box-shadow: 0 0 0 1px rgba(40,171,131,0.15), 0 4px 14px rgba(40,171,131,0.25);
+}
+.pres-nav-btn.primary:hover { background: #198a69; color: #fff; }
+
+.pres-close-btn {
+  font-family: var(--pres-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+.pres-close-btn:hover {
+  background: var(--red-light); color: var(--red); border-color: #f0c0c0;
+}
+
+/* Progress dots compacted; mono counter to the left */
+.pres-progress-wrap { display: flex; align-items: center; gap: 14px; }
+.pres-progress-counter {
+  font-family: var(--pres-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.pres-prog-dot.active { background: var(--green-mid); }
+
+/* Cover slide eyebrow → mono */
+.pres-cover-eyebrow { font-family: var(--pres-mono); font-size: 10px; letter-spacing: 0.22em; }
 
 /* Footer */
 footer { position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; background: var(--white); margin-top: auto; }
@@ -1144,7 +1338,10 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       Exit Presentation
     </button>
-    <div class="pres-progress" id="presProgress"></div>
+    <div class="pres-progress-wrap">
+      <span class="pres-progress-counter" id="presCounter">// 01 / 11</span>
+      <div class="pres-progress" id="presProgress"></div>
+    </div>
     <div class="pres-nav-btns">
       <button class="pres-nav-btn" id="presBtnPrev" onclick="presNav(-1)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -2342,12 +2539,22 @@ function pbar(label, val, max, cls) {
   </div>`;
 }
 function psc(v) { if(v===null||v===undefined)return'warn'; if(v>=65)return'good'; if(v>=35)return'warn'; return'bad'; }
-function presTopBar(clientName, sectionLabel) {
+function presTopBar(clientName, sectionLabel, slideNum) {
+  const counter = slideNum
+    ? `<span class="pres-topbar-counter">// ${String(slideNum).padStart(2,'0')} / __TOTAL__</span>`
+    : '';
   return `<div class="pres-topbar">
     <img class="pres-topbar-logo" src="https://i0.wp.com/medicalmarketingwhiz.com/wp-content/uploads/2025/01/Medical-Marketing-Whiz-LogoWhite.png?w=1072&ssl=1" alt="Medical Marketing Whiz">
     <span class="pres-topbar-client">${clientName}</span>
-    <span class="pres-topbar-section">${sectionLabel}</span>
+    <div class="pres-topbar-right">
+      <span class="pres-topbar-section">${sectionLabel}</span>
+      ${counter}
+    </div>
   </div>`;
+}
+
+function presEyebrow(num, label) {
+  return `<div class="pres-eyebrow">// ${String(num).padStart(2,'0')} — ${label}</div>`;
 }
 
 // ── BUILD SLIDES ──
@@ -2421,8 +2628,9 @@ function buildPresentationSlides(d) {
           <img src="https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b629fa2dde97427c8c44.png" style="width:100%;border-radius:8px;" alt="Patient Journey Diagram">
         </div>
       </div>
-      ${presTopBar(name, 'Patient Journey')}
+      ${presTopBar(name, 'Patient Journey', 2)}
       <div class="pres-body">
+        ${presEyebrow(2, 'Patient Journey')}
         <div class="pres-section-title">How Patients Are Choosing Providers in the <em>AI Era</em></div>
         <div class="pres-section-sub">In today's digitally connected world, it's no longer just about being a great clinician — it's about how you show up online and in AI searches like ChatGPT.</div>
         <div class="pres-journey" style="margin-bottom:16px;">
@@ -2450,8 +2658,9 @@ function buildPresentationSlides(d) {
   // ── SLIDE 3: YOUR WEBSITE ──────────────────────────────────────────────────
   slides.push(`
     <div class="pres-slide pres-content">
-      ${presTopBar(name, 'Your Website')}
+      ${presTopBar(name, 'Your Website', 3)}
       <div class="pres-body">
+        ${presEyebrow(3, 'Website Audit')}
         <div class="pres-section-title">What Do People See When They <em>Research You?</em></div>
         <div class="pres-section-sub">${website?`<a href="${website}" target="_blank" style="color:var(--green);text-decoration:none;font-weight:600;">${website.replace(/https?:\/\//,'')}</a> · Your website is often your first impression — and it's either building trust or losing it.`:'Website not found'}</div>
         <div class="pres-metric-grid cols-3" style="margin-bottom:12px;">
@@ -2501,8 +2710,9 @@ function buildPresentationSlides(d) {
           </table>`:'<p style="color:var(--text-muted);font-size:14px;">No ranked keywords found for this domain.</p>'}
         </div>
       </div>
-      ${presTopBar(name, 'SEO Deep Dive')}
+      ${presTopBar(name, 'SEO Deep Dive', 4)}
       <div class="pres-body">
+        ${presEyebrow(4, 'SEO Deep Dive')}
         <div class="pres-section-title">Website SEO Deep Dive: <em>Unlocking Your Full Potential</em></div>
         <div class="pres-section-sub">A comprehensive SEO audit uncovers the hidden roadblocks preventing your website from reaching its full potential</div>
         ${wa.overallScore!=null?`
@@ -2527,8 +2737,9 @@ function buildPresentationSlides(d) {
   // ── SLIDE 5: AI & AEO ─────────────────────────────────────────────────────
   slides.push(`
     <div class="pres-slide pres-content">
-      ${presTopBar(name, 'AI Visibility')}
+      ${presTopBar(name, 'AI Visibility', 5)}
       <div class="pres-body">
+        ${presEyebrow(5, 'AI Visibility')}
         <div class="pres-section-title">AI &amp; ChatGPT Search: <em>The Future of Online Visibility</em></div>
         <div class="pres-section-sub">AI search tools deliver direct answers instead of a list of websites — fundamentally changing how patients find providers.</div>
         <div class="pres-two" style="flex:1;gap:14px;">
@@ -2555,8 +2766,9 @@ function buildPresentationSlides(d) {
   // ── SLIDE 6: GOOGLE RANKINGS ───────────────────────────────────────────────
   slides.push(`
     <div class="pres-slide pres-content">
-      ${presTopBar(name, 'Google Rankings')}
+      ${presTopBar(name, 'Google Rankings', 6)}
       <div class="pres-body">
+        ${presEyebrow(6, 'Google Rankings')}
         <div class="pres-section-title">Are You Showing Up in the <em>TOP 3</em> in Google Search?</div>
         <div class="pres-section-sub">90% of clicks go to the top 3 listings. Ranking organically means you don't pay Google a cent for ads.</div>
         <div class="pres-two" style="flex:1;">
@@ -2603,8 +2815,9 @@ function buildPresentationSlides(d) {
   const revCls = both?'good':revOk?'warn':'bad';
   slides.push(`
     <div class="pres-slide pres-content">
-      ${presTopBar(name, 'Online Reputation')}
+      ${presTopBar(name, 'Online Reputation', 7)}
       <div class="pres-body">
+        ${presEyebrow(7, 'Online Reputation')}
         <div class="pres-section-title">Online Reputation / <em>Google Reviews</em></div>
         <div class="pres-section-sub">92% of patients read reviews before choosing a provider. Goal: 100+ Reviews | 4.8+ Stars | Ongoing Responses</div>
         <div class="pres-two" style="flex:1;">
@@ -2638,8 +2851,9 @@ function buildPresentationSlides(d) {
   // ── SLIDE 8: CITATIONS ─────────────────────────────────────────────────────
   slides.push(`
     <div class="pres-slide pres-content">
-      ${presTopBar(name, 'Local & Citations')}
+      ${presTopBar(name, 'Local & Citations', 8)}
       <div class="pres-body">
+        ${presEyebrow(8, 'Local & Citations')}
         <div class="pres-section-title">Online Visibility: <em>Citations &amp; Directory Listings</em></div>
         <div class="pres-section-sub">Consistent NAP (Name, Address, Phone) across the web signals legitimacy to Google and AI platforms. Inconsistencies hurt your local rankings.</div>
         <div class="pres-metric-grid cols-3" style="margin-bottom:14px;">
@@ -2662,8 +2876,9 @@ function buildPresentationSlides(d) {
   // ── SLIDE 9: HOW MMW IS DIFFERENT ─────────────────────────────────────────
   slides.push(`
     <div class="pres-slide pres-content">
-      ${presTopBar(name, 'About MMW')}
+      ${presTopBar(name, 'About MMW', 9)}
       <div class="pres-body">
+        ${presEyebrow(9, 'About MMW')}
         <div class="pres-section-title">🌟 How <em>Medical Marketing Whiz</em> is Different 🌟</div>
         <div class="pres-section-sub">Our entire approach is specifically tailored to the distinct needs of specialized healthcare practices</div>
         <div class="pres-two" style="flex:1;">
@@ -2698,8 +2913,9 @@ function buildPresentationSlides(d) {
   ];
   slides.push(`
     <div class="pres-slide pres-content">
-      ${presTopBar(name, 'Recommendation')}
+      ${presTopBar(name, 'Recommendation', 10)}
       <div class="pres-body">
+        ${presEyebrow(10, 'Recommendation')}
         <div class="pres-section-title">Services Recommendation <em>Based On The Data</em></div>
         <div class="pres-section-sub">Click any program card to view the full program details</div>
         ${rec.main_reason?`<div class="pres-callout" style="margin-bottom:14px;"><strong>Recommended: ${recommended}</strong><br><span style="font-weight:400;font-size:12px;">${rec.main_reason}</span></div>`:''}
@@ -2738,7 +2954,9 @@ function buildPresentationSlides(d) {
       </div>
     </div>`);
 
-  return slides;
+  // Replace topbar counter total placeholder with actual slide count
+  const total = String(slides.length).padStart(2, '0');
+  return slides.map(s => s.replace(/__TOTAL__/g, total));
 }
 
 // Helper used in slides
@@ -2831,6 +3049,12 @@ function updatePresNav() {
     prog.innerHTML = Array.from({ length: total }, (_, i) =>
       `<div class="pres-prog-dot ${i === _presIndex ? 'active' : ''}" onclick="presGoto(${i})" title="Slide ${i+1}"></div>`
     ).join('');
+  }
+
+  // Mono slide counter
+  const counter = document.getElementById('presCounter');
+  if (counter) {
+    counter.textContent = `// ${String(_presIndex + 1).padStart(2,'0')} / ${String(total).padStart(2,'0')}`;
   }
 }
 
