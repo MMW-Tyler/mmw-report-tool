@@ -46,7 +46,7 @@ nav { position: sticky; top: 0; z-index: 100; display: flex; align-items: center
 .lstep.done .lstep-num { display: none; }
 
 /* INTAKE */
-#intakeSection { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 52px 36px 80px; }
+#intakeSection, #reviewLinkSection { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 52px 36px 80px; }
 .eyebrow { display: inline-block; font-family: 'Barlow', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green-mid); background: var(--green-light); border: 1px solid var(--border-strong); padding: 5px 14px; border-radius: 100px; margin-bottom: 20px; opacity: 0; animation: fadeUp 0.5s ease 0.05s forwards; }
 .page-title { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 44px; line-height: 1.1; letter-spacing: -0.02em; color: var(--dark); margin-bottom: 12px; opacity: 0; animation: fadeUp 0.6s ease 0.15s forwards; }
 .page-title em { font-style: normal; color: var(--green); }
@@ -61,6 +61,8 @@ input[type="text"], input[type="url"] { width: 100%; font-family: 'Barlow', sans
 input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(40,171,131,0.1); }
 input::placeholder { color: #b8c8cc; }
 .btn-generate { display: inline-flex; align-items: center; gap: 9px; background: var(--green); color: #fff; font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.03em; padding: 13px 28px; border-radius: 10px; border: none; cursor: pointer; transition: background 0.18s, transform 0.15s, box-shadow 0.18s; margin-top: 8px; }
+.rlg-action-btn { display: inline-flex; align-items: center; gap: 7px; background: #fff; border: 1px solid var(--border-strong); border-radius: 7px; padding: 8px 14px; font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; text-decoration: none; }
+.rlg-action-btn:hover { border-color: var(--green); color: var(--green-mid); background: var(--green-lighter); }
 .btn-generate:hover { background: var(--green-mid); transform: scale(1.02); box-shadow: 0 8px 28px rgba(40,171,131,0.3); }
 .btn-generate:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 .error-msg { display: none; margin-top: 14px; padding: 12px 16px; border-radius: 9px; background: var(--red-light); color: var(--red); border: 1px solid #f0c0c0; font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 500; }
@@ -700,7 +702,7 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
   .tab-btn{padding:12px 14px;font-size:11px;}
 }
 @media (max-width:560px) {
-  nav{padding:0 20px;} #intakeSection{padding:32px 16px 60px;} .intake-card{padding:24px 20px;}
+  nav{padding:0 20px;} #intakeSection, #reviewLinkSection{padding:32px 16px 60px;} .intake-card{padding:24px 20px;}
   .form-row{grid-template-columns:1fr;} .page-title{font-size:32px;}
   .score-grid,.cat-scores{grid-template-columns:1fr 1fr;} .dir-grid{grid-template-columns:1fr 1fr;}
   footer{padding:18px 20px;flex-direction:column;gap:6px;} .three-col,.rec-grid{grid-template-columns:1fr;}
@@ -879,7 +881,15 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
 <!-- NAV -->
 <nav>
   <div class="logo"><img src="https://i0.wp.com/medicalmarketingwhiz.com/wp-content/uploads/2025/01/Medical-Marketing-Whiz-LogoWhite.png?w=1072&ssl=1" alt="Medical Marketing Whiz" height="36"></div>
-  <div class="nav-badge">Marketing Analysis Tool</div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="#" id="rlgNavLink" onclick="event.preventDefault();openReviewLinkGenerator();"
+       style="font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);text-decoration:none;padding:6px 10px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color 0.15s,border-color 0.15s;"
+       onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.4)'"
+       onmouseout="this.style.color='rgba(255,255,255,0.55)';this.style.borderColor='rgba(255,255,255,0.15)'">
+      Review Link Generator
+    </a>
+    <div class="nav-badge">Marketing Analysis Tool</div>
+  </div>
 </nav>
 
 <!-- INTAKE -->
@@ -1022,6 +1032,46 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
     </button>
     <div class="error-msg" id="errMsg"></div>
   </div>
+</div>
+
+<!-- REVIEW LINK GENERATOR -->
+<div id="reviewLinkSection" style="display:none;">
+  <div class="eyebrow">Quick Tool</div>
+  <h1 class="page-title">Review <em>Link</em> Generator</h1>
+  <p class="page-desc">Search for a Google Business Profile to instantly get its Place ID, review links, and quick-access links.</p>
+
+  <!-- Search card -->
+  <div class="intake-card" id="rlgSearchCard">
+    <div class="intake-card-title">Find the Business</div>
+    <p class="intake-card-desc">Enter the business name and location, then select the correct listing.</p>
+
+    <div style="position:relative;margin-bottom:16px;">
+      <label class="field-label">Business Name *</label>
+      <input type="text" id="rlg_search" placeholder="e.g. Advanced Beauty Lab Newton MA"
+        style="padding-right:48px;"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();rlgSearch();}" />
+      <button onclick="rlgSearch()" id="rlgSearchBtn"
+        style="position:absolute;right:6px;bottom:6px;height:34px;padding:0 14px;background:var(--green);border:none;border-radius:7px;color:#fff;font-family:'Barlow',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:background 0.15s;"
+        onmouseover="this.style.background='var(--green-mid)'" onmouseout="this.style.background='var(--green)'">
+        Search
+      </button>
+    </div>
+
+    <div id="rlgSearchResults" style="display:none;">
+      <div style="font-family:'Lato',sans-serif;font-size:12px;color:var(--text-muted);margin-bottom:12px;" id="rlgResultsLabel">Select the correct business:</div>
+      <div id="rlgCandidateCards" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+
+    <div class="error-msg" id="rlgErrMsg"></div>
+
+    <div style="margin-top:18px;">
+      <a href="#" onclick="event.preventDefault();closeReviewLinkGenerator();"
+         style="font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-muted);text-decoration:none;">← Back to Marketing Analysis</a>
+    </div>
+  </div>
+
+  <!-- Result card -->
+  <div class="intake-card" id="rlgResultCard" style="display:none;"></div>
 </div>
 
 <!-- REPORT -->
@@ -1663,6 +1713,263 @@ function showSearchErr(msg) {
   const el = document.getElementById('searchErrMsg');
   el.textContent = msg;
   el.style.display = 'block';
+}
+
+// ─────────────────────────────────────────────
+// REVIEW LINK GENERATOR
+// ─────────────────────────────────────────────
+function openReviewLinkGenerator() {
+  document.getElementById('intakeSection').style.display = 'none';
+  document.getElementById('reportSection').style.display = 'none';
+  document.getElementById('reviewLinkSection').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closeReviewLinkGenerator() {
+  document.getElementById('reviewLinkSection').style.display = 'none';
+  document.getElementById('intakeSection').style.display = 'block';
+  rlgReset();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function rlgReset() {
+  document.getElementById('rlg_search').value = '';
+  document.getElementById('rlgSearchResults').style.display = 'none';
+  document.getElementById('rlgCandidateCards').innerHTML = '';
+  document.getElementById('rlgResultCard').style.display = 'none';
+  document.getElementById('rlgResultCard').innerHTML = '';
+  document.getElementById('rlgSearchCard').style.display = 'block';
+  const errEl = document.getElementById('rlgErrMsg');
+  errEl.textContent = '';
+  errEl.style.display = 'none';
+}
+
+function rlgShowErr(msg) {
+  const el = document.getElementById('rlgErrMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function rlgSearch() {
+  const query = document.getElementById('rlg_search').value.trim();
+  if (!query) { rlgShowErr('Enter a business name to search.'); return; }
+  const errEl = document.getElementById('rlgErrMsg');
+  errEl.textContent = ''; errEl.style.display = 'none';
+
+  const btn = document.getElementById('rlgSearchBtn');
+  btn.disabled = true; btn.textContent = 'Searching...';
+
+  try {
+    const res = await fetch('/api/places-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    if (!data.candidates || data.candidates.length === 0) {
+      document.getElementById('rlgSearchResults').style.display = 'block';
+      document.getElementById('rlgResultsLabel').textContent = 'No results found.';
+      document.getElementById('rlgCandidateCards').innerHTML = '';
+      return;
+    }
+    rlgRenderCandidates(data.candidates);
+  } catch (e) {
+    rlgShowErr('Search failed: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Search';
+  }
+}
+
+function rlgRenderCandidates(candidates) {
+  const container = document.getElementById('rlgCandidateCards');
+  document.getElementById('rlgResultsLabel').textContent = `${candidates.length} result${candidates.length > 1 ? 's' : ''} found — select the correct business:`;
+
+  container.innerHTML = candidates.map((c, i) => `
+    <div onclick="rlgSelectCandidate(${i})" data-idx="${i}"
+      style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:space-between;gap:12px;"
+      onmouseover="this.style.borderColor='var(--green)';this.style.background='var(--green-lighter)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+      <div style="min-width:0;">
+        <div style="font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;color:var(--dark);margin-bottom:2px;">${c.name}</div>
+        <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.formattedAddress}</div>
+        ${c.rating ? `<div style="font-size:11px;color:var(--green);margin-top:3px;font-weight:600;">★ ${c.rating} (${(c.reviewCount||0).toLocaleString()} reviews)</div>` : ''}
+      </div>
+      <div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--green-light);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  `).join('');
+
+  container._candidates = candidates;
+  document.getElementById('rlgSearchResults').style.display = 'block';
+}
+
+async function rlgSelectCandidate(idx) {
+  const candidates = document.getElementById('rlgCandidateCards')._candidates;
+  const c = candidates[idx];
+  const cards = document.querySelectorAll('#rlgCandidateCards > div');
+  cards.forEach((card, i) => {
+    card.style.opacity = i === idx ? '1' : '0.4';
+    card.style.pointerEvents = 'none';
+  });
+
+  try {
+    const res = await fetch('/api/review-link-details', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placeId: c.placeId }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    rlgRenderResult(data);
+  } catch (e) {
+    rlgShowErr('Could not load business details: ' + e.message);
+    cards.forEach(card => { card.style.opacity = '1'; card.style.pointerEvents = ''; });
+  }
+}
+
+function rlgEscape(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function rlgFormatCategory(t) {
+  return t.replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+}
+
+function rlgCopy(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.background = 'var(--green)';
+    btn.style.color = '#fff';
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 1200);
+  });
+}
+
+function rlgRenderResult(d) {
+  const placeId = d.placeId || '';
+  const name = d.name || '';
+  const city = (d.formattedAddress || '').split(',').slice(-3, -2)[0]?.trim() || '';
+  const state = (d.formattedAddress || '').split(',').slice(-2, -1)[0]?.trim().split(' ')[0] || '';
+  const searchQuery = [name, city, state].filter(Boolean).join(' ');
+
+  const writeReviewUrl = `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
+  const viewReviewsUrl = `https://search.google.com/local/reviews?placeid=${encodeURIComponent(placeId)}`;
+  const serpUrl        = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+  const mapsUrl        = d.googleMapsUrl || `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}`;
+  const placeIdLookup  = `https://developers.google.com/maps/documentation/places/web-service/place-id`;
+
+  const linkRow = (label, url, helpText) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--green-lighter);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:'Barlow',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:3px;">${label}</div>
+        <a href="${rlgEscape(url)}" target="_blank" rel="noopener" style="font-family:'Lato',sans-serif;font-size:13px;color:var(--green-mid);text-decoration:none;word-break:break-all;">${rlgEscape(url)}</a>
+        ${helpText ? `<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${helpText}</div>` : ''}
+      </div>
+      <button onclick="rlgCopy('${url.replace(/'/g, "\\'")}', this)"
+        style="flex-shrink:0;background:#fff;border:1px solid var(--border-strong);border-radius:6px;padding:6px 12px;font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;">
+        Copy
+      </button>
+    </div>
+  `;
+
+  const categories = (d.types || []).filter(t => !['point_of_interest','establishment'].includes(t)).map(rlgFormatCategory);
+  const photos = d.photos || [];
+
+  const html = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;">
+      <div style="min-width:0;flex:1;">
+        <div class="intake-card-title" style="margin-bottom:4px;">${rlgEscape(name)}</div>
+        <div style="font-size:13px;color:var(--text-muted);">${rlgEscape(d.formattedAddress || '')}</div>
+        ${d.phone ? `<div style="font-size:13px;color:var(--text-muted);margin-top:2px;">${rlgEscape(d.phone)}</div>` : ''}
+      </div>
+      ${d.rating ? `
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-family:'Poppins',sans-serif;font-size:26px;font-weight:700;color:var(--green);">★ ${d.rating}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${(d.reviewCount||0).toLocaleString()} reviews</div>
+      </div>` : ''}
+    </div>
+
+    <!-- Quick action buttons -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">
+      <button onclick="rlgReset()" class="rlg-action-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        Search Again
+      </button>
+      ${d.website ? `<a href="${rlgEscape(d.website)}" target="_blank" rel="noopener" class="rlg-action-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Visit Website
+      </a>` : ''}
+      <a href="${rlgEscape(mapsUrl)}" target="_blank" rel="noopener" class="rlg-action-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        View on Google Maps
+      </a>
+      <a href="${rlgEscape(placeIdLookup)}" target="_blank" rel="noopener" class="rlg-action-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Google ID Info
+      </a>
+    </div>
+
+    <!-- Place ID + Links -->
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'Barlow',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Place ID</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1px solid var(--border-strong);border-radius:8px;margin-bottom:14px;">
+        <code style="flex:1;font-family:'Courier New',monospace;font-size:12px;color:var(--dark);word-break:break-all;">${rlgEscape(placeId)}</code>
+        <button onclick="rlgCopy('${placeId}', this)"
+          style="flex-shrink:0;background:#fff;border:1px solid var(--border-strong);border-radius:6px;padding:6px 12px;font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;color:var(--text-secondary);cursor:pointer;">
+          Copy
+        </button>
+      </div>
+
+      ${linkRow('Get More Reviews (Write a Review)', writeReviewUrl, 'Share this with customers to leave a Google review.')}
+      ${linkRow('View Google Business Profile Reviews', viewReviewsUrl, 'Direct link to read existing reviews.')}
+      ${linkRow('View Business Profile in Google Search (SERP)', serpUrl, 'Search results page with knowledge panel.')}
+    </div>
+
+    <!-- Categories -->
+    ${categories.length ? `
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'Barlow',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Categories</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${categories.map(c => `<span style="display:inline-block;padding:5px 11px;background:var(--green-light);border:1px solid var(--border-strong);border-radius:99px;font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;color:var(--green-mid);">${rlgEscape(c)}</span>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Hours -->
+    ${(d.weekdayText && d.weekdayText.length) ? `
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'Barlow',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Hours ${d.openNow === true ? '<span style="color:var(--green);text-transform:none;letter-spacing:0;font-weight:600;">· Open Now</span>' : d.openNow === false ? '<span style="color:#c0392b;text-transform:none;letter-spacing:0;font-weight:600;">· Closed</span>' : ''}</div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+        ${d.weekdayText.map(line => `<div style="font-family:'Lato',sans-serif;font-size:13px;color:var(--text-secondary);padding:3px 0;">${rlgEscape(line)}</div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Photos -->
+    ${photos.length ? `
+    <div style="margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-family:'Barlow',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);">Photos</div>
+        <a href="${rlgEscape(mapsUrl)}" target="_blank" rel="noopener" style="font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;color:var(--green-mid);text-decoration:none;">View all on Google Maps →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;">
+        ${photos.map(ph => `<div style="aspect-ratio:1/1;border-radius:6px;overflow:hidden;background:var(--border);"><img src="/api/place-photo?ref=${encodeURIComponent(ph.photoReference)}&maxwidth=300" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>`).join('')}
+      </div>
+    </div>` : ''}
+  `;
+
+  const resultCard = document.getElementById('rlgResultCard');
+  resultCard.innerHTML = html;
+  resultCard.style.display = 'block';
+  document.getElementById('rlgSearchCard').style.display = 'none';
+  resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Load Maps API on page load
