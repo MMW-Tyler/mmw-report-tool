@@ -1546,6 +1546,34 @@ window.initAutocomplete = function() {
       lng:              place.geometry?.location?.lng() || null,
     });
   });
+
+  // Attach the same autocomplete to the Review Link Generator search input
+  const rlgInput = document.getElementById('rlg_search');
+  if (rlgInput) {
+    const rlgAc = new google.maps.places.Autocomplete(rlgInput, {
+      types: ['establishment'],
+      fields: ['place_id', 'name', 'formatted_address'],
+    });
+    rlgAc.addListener('place_changed', async () => {
+      const place = rlgAc.getPlace();
+      if (!place.place_id) return;
+      const errEl = document.getElementById('rlgErrMsg');
+      errEl.textContent = ''; errEl.style.display = 'none';
+      document.getElementById('rlgSearchResults').style.display = 'none';
+      try {
+        const res = await fetch('/api/review-link-details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placeId: place.place_id }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        rlgRenderResult(data);
+      } catch (e) {
+        rlgShowErr('Could not load business details: ' + e.message);
+      }
+    });
+  }
 };
 
 function onSearchInput() {
