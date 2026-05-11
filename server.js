@@ -220,6 +220,81 @@ app.get('/api/health', (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+// REVIEW LINK DETAILS — extended details used by the
+// Review Link Generator (categories, hours, photos, maps url)
+// ─────────────────────────────────────────────
+app.post('/api/review-link-details', async (req, res) => {
+  const { placeId } = req.body;
+  if (!placeId) return res.status(400).json({ error: 'placeId required' });
+
+  try {
+    const fields = [
+      'place_id', 'name', 'formatted_address', 'formatted_phone_number',
+      'rating', 'user_ratings_total', 'business_status', 'types',
+      'website', 'opening_hours', 'geometry', 'photo', 'url'
+    ].join(',');
+
+    const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_API_KEY}`;
+    const detailRes = await fetch(detailUrl);
+    const detailData = await detailRes.json();
+
+    if (!detailData.result) {
+      return res.status(500).json({ error: 'Failed to get place details' });
+    }
+
+    const p = detailData.result;
+    const photos = (p.photos || []).slice(0, 6).map(ph => ({
+      photoReference: ph.photo_reference,
+      width:          ph.width,
+      height:         ph.height,
+      attributions:   ph.html_attributions || [],
+    }));
+
+    res.json({
+      placeId,
+      name:             p.name || '',
+      formattedAddress: p.formatted_address || '',
+      phone:            p.formatted_phone_number || '',
+      website:          p.website || '',
+      rating:           p.rating || null,
+      reviewCount:      p.user_ratings_total || 0,
+      businessStatus:   p.business_status || '',
+      types:            p.types || [],
+      weekdayText:      p.opening_hours?.weekday_text || [],
+      openNow:          p.opening_hours?.open_now ?? null,
+      photos,
+      googleMapsUrl:    p.url || '',
+      lat:              p.geometry?.location?.lat || null,
+      lng:              p.geometry?.location?.lng || null,
+    });
+  } catch (err) {
+    console.error('Review link details error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────
+// PLACE PHOTO PROXY — keeps the API key server-side
+// ─────────────────────────────────────────────
+app.get('/api/place-photo', async (req, res) => {
+  const ref = req.query.ref;
+  const maxwidth = Math.min(parseInt(req.query.maxwidth, 10) || 400, 1200);
+  if (!ref) return res.status(400).send('ref required');
+
+  try {
+    const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxwidth}&photoreference=${encodeURIComponent(ref)}&key=${GOOGLE_API_KEY}`;
+    const photoRes = await fetch(photoUrl, { redirect: 'follow' });
+    if (!photoRes.ok) return res.status(photoRes.status).send('photo fetch failed');
+    res.setHeader('Content-Type', photoRes.headers.get('content-type') || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    photoRes.body.pipe(res);
+  } catch (err) {
+    console.error('Place photo proxy error:', err);
+    res.status(500).send('photo proxy error');
+  }
+});
+
+// ─────────────────────────────────────────────
 // GOOGLE PLACES — find business + get details
 // ─────────────────────────────────────────────
 app.post('/api/places', async (req, res) => {
