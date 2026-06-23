@@ -1180,9 +1180,19 @@ Return ONLY this JSON, no markdown:
     });
 
     const data = await claudeRes.json();
-    const text = data.content?.[0]?.text || '{}';
+    const text = data.content?.[0]?.text;
+    if (!text) {
+      // Claude API returned an error response (e.g. bad model id, rate limit,
+      // auth) rather than throwing — fall back to the default recommendation
+      // so the report never renders a blank recommendation section.
+      throw new Error(`No content in Claude response: ${JSON.stringify(data).slice(0, 300)}`);
+    }
     const cleaned = text.replace(/```json|```/g, '').trim();
-    res.json(JSON.parse(cleaned));
+    const parsed = JSON.parse(cleaned);
+    if (!parsed.main_reason) {
+      throw new Error('Parsed recommendation missing main_reason');
+    }
+    res.json(parsed);
 
   } catch (err) {
     console.error('Recommendation error:', err);

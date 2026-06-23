@@ -65,7 +65,7 @@ const IMAGE_URLS = {
   cover:                'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3f3903d829c73b27877b5.png',
   header_banner:        'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b629a78e55077a091d0a.png',
   patient_journey:      'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b629fa2dde97427c8c44.png',
-  seo_vs_aeo:           'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6293ffd8cf7a0ec5ee3.png',
+  seo_vs_aeo:           'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/6a3ae22f109a1ab49dde6010.png',
   what_drives_rankings: 'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b62924c2b28f0390da30.png',
   account_manager:      'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b6293ffd8cf7a0ec5edc.png',
   deal_breakers:        'https://assets.cdn.filesafe.space/y2T4QnIAgObiz9B7329R/media/69d3b62917d86ef0ca0f010b.png',
@@ -1008,12 +1008,10 @@ async function generateReport(data) {
 
     sectionHeading('Services Recommendation Based On The Data'),
     spacer(6),
-    ...(rec.main_reason ? [
-      cardBlock([
-        new Paragraph({ spacing: { before: 0, after: 80 }, children: [new TextRun({ text: `Recommended Program: ${rec.recommended || 'Practice Pro'}`, size: 28, bold: true, font: F_BODY, color: GREEN })] }),
-        new Paragraph({ spacing: { before: 0, after: 0 }, children: [new TextRun({ text: rec.main_reason, size: SZ_BODY, font: F_BODY, color: BLACK })] }),
-      ], GREEN_LIGHT, GREEN),
-    ] : []),
+    cardBlock([
+      new Paragraph({ spacing: { before: 0, after: 80 }, children: [new TextRun({ text: `Recommended Program: ${rec.recommended || 'Practice Pro'}`, size: 28, bold: true, font: F_BODY, color: GREEN })] }),
+      new Paragraph({ spacing: { before: 0, after: 0 }, children: [new TextRun({ text: rec.main_reason || 'Based on the analysis, Practice Pro best addresses the current gaps while providing the tools needed for sustainable growth. Smart Start is a reasonable alternative if Practice Pro is not within budget, but the ads component in Practice Pro is what drives early ROI for practices at this stage.', size: SZ_BODY, font: F_BODY, color: BLACK })] }),
+    ], GREEN_LIGHT, GREEN),
     spacer(12),
   ];
 
