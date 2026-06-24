@@ -1095,9 +1095,19 @@ Return ONLY this JSON, no markdown:
     });
 
     const data = await claudeRes.json();
-    const text = data.content?.[0]?.text || '{}';
+    const text = data.content?.[0]?.text;
+    if (!text) {
+      // Claude API returned an error response (bad model id, rate limit, auth)
+      // rather than throwing — fall back to the default simulation so the
+      // report never renders a blank AI-visibility section.
+      throw new Error(`No content in Claude response: ${JSON.stringify(data).slice(0, 300)}`);
+    }
     const cleaned = text.replace(/```json|```/g, '').trim();
-    res.json(JSON.parse(cleaned));
+    const parsed = JSON.parse(cleaned);
+    if (!parsed.queries || !parsed.queries.length) {
+      throw new Error('Parsed AI visibility missing queries');
+    }
+    res.json(parsed);
 
   } catch (err) {
     console.error('AI visibility error:', err);
