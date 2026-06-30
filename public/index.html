@@ -1105,6 +1105,10 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           Simplified PDF
         </button>
+        <button class="btn-rh" onclick="openDiagModal()" title="Internal: data sources & errors for this run">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          Diagnostics
+        </button>
         <button class="btn-rh" onclick="resetForm()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.36"/></svg>
           New Report
@@ -1376,6 +1380,19 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
         Send Report
       </button>
     </div>
+  </div>
+</div>
+
+<div id="diagModal" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(50,53,71,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px 30px;max-width:720px;width:100%;max-height:88vh;overflow-y:auto;margin:20px;box-shadow:0 20px 60px rgba(50,53,71,0.25);animation:slideUp 0.25s cubic-bezier(0.22,1,0.36,1) both;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div>
+        <div style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:800;color:var(--dark);">Run Diagnostics</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Internal only — shows which data sources succeeded, failed, or returned empty for this report. Not included in the client report, email, or export.</div>
+      </div>
+      <button onclick="closeDiagModal()" style="width:32px;height:32px;border-radius:8px;background:#f0f2f1;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text-muted);flex-shrink:0;">✕</button>
+    </div>
+    <div id="diagContent" style="margin-top:18px;"></div>
   </div>
 </div>
 
@@ -2066,6 +2083,7 @@ async function generateReport(){
 
 // ── BUILD REPORT ──
 function buildReport(d){
+  window._lastReportData = d; // retained for the internal Diagnostics panel
   const p=d.places||{};
   const we=d.websiteExtract||{};
   const ps=d.pagespeed||{};
@@ -2705,6 +2723,126 @@ function buildCompetitive(d) {
   }
 }
 
+// ── DIAGNOSTICS MODAL (internal only) ──
+function openDiagModal() {
+  const d = window._lastReportData;
+  if (!d) { alert('No report loaded.'); return; }
+  document.getElementById('diagContent').innerHTML = buildDiagnostics(d);
+  document.getElementById('diagModal').style.display = 'flex';
+}
+function closeDiagModal() {
+  document.getElementById('diagModal').style.display = 'none';
+}
+
+function buildDiagnostics(d) {
+  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const errs = Array.isArray(d.errors) ? d.errors : [];
+  const errFor = step => errs.filter(e => e.step === step).map(e => e.error);
+
+  // Status pill helpers
+  const pill = (color, bg, txt) => `<span style="display:inline-block;font-family:'Barlow',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 9px;border-radius:100px;color:${color};background:${bg};white-space:nowrap;">${txt}</span>`;
+  const OK    = pill('#1f7a54', '#e3f5ec', 'OK');
+  const WARN  = pill('#9a6a00', '#fdf1d6', 'Empty');
+  const FAIL  = pill('#a23535', '#fbe3e3', 'Failed');
+  const SKIP  = pill('#5a6675', '#eef0f2', 'Skipped');
+
+  // Per-step evaluation: returns {status, note}
+  const p   = d.places || {};
+  const al  = d.adviceLocal || {};
+  const alData = al.report?.data || {};
+  const ov  = alData.overview?.baselineOverview || {};
+  const baseline = alData.data?.baseline || {};
+  const allDirs = [...(baseline.locals||[]), ...(baseline.directories||[])];
+  const dirsFound = ov.directoriesFound ?? allDirs.filter(x=>x.found).length;
+  const dirsTotal = ov.directoriesTotal ?? null;
+
+  const rows = [];
+  const row = (label, badge, note) => rows.push({label, badge, note});
+
+  // 1. Google Places
+  if (errFor('places').length) row('Google Business Profile (Places)', FAIL, errFor('places').join('; '));
+  else if (p.placeId) row('Google Business Profile (Places)', OK, `${esc(p.name||'')} · ${esc([p.city,p.state,p.country].filter(Boolean).join(', '))}`);
+  else row('Google Business Profile (Places)', WARN, 'No place matched the search.');
+
+  // 2. Website extraction
+  const we = d.websiteExtract || {};
+  if (errFor('websiteExtract').length) row('Website extraction', FAIL, errFor('websiteExtract').join('; '));
+  else if (!p.website && !d.website) row('Website extraction', SKIP, 'No website available to extract.');
+  else if (we.specialty || we.description) row('Website extraction', OK, esc(we.specialty || 'Extracted'));
+  else row('Website extraction', WARN, 'Ran but returned no specialty/description.');
+
+  // 3. Website audit
+  if (errFor('websiteAudit').length) row('Website audit', FAIL, errFor('websiteAudit').join('; '));
+  else if (!p.website && !d.website) row('Website audit', SKIP, 'No website available.');
+  else if (d.websiteAudit) row('Website audit', OK, '');
+  else row('Website audit', WARN, 'No audit data returned.');
+
+  // 4. Advice Local citation scan — the most failure-prone, most-detailed step
+  const isNonUS = p.country && p.country !== 'US';
+  const scanCountry = al.country || (isNonUS ? p.country : 'US');
+  if (errFor('adviceLocal').length) {
+    row('Citation scan (Advice Local)', FAIL, errFor('adviceLocal').join('; '));
+  } else if (al.error) {
+    row('Citation scan (Advice Local)', FAIL, esc(al.error));
+  } else if (!al.report) {
+    row('Citation scan (Advice Local)', WARN, 'No report returned (scan may have been skipped — needs phone, street & zip).');
+  } else if (dirsFound === 0 && allDirs.length === 0) {
+    const cause = isNonUS
+      ? `Scan ran for country "${esc(scanCountry)}" but returned 0 directories. If this is a Canadian business, confirm the address has a valid province + postal code and that the Advice Local account covers CA.`
+      : 'Scan ran but returned 0 directories — the business NAP may not have matched any listings, or the scan timed out before completing.';
+    row('Citation scan (Advice Local)', WARN, cause);
+  } else {
+    row('Citation scan (Advice Local)', OK, `${dirsFound}${dirsTotal?(' of '+dirsTotal):''} directories found · country "${esc(scanCountry)}"`);
+  }
+
+  // 5. PageSpeed
+  if (errFor('pagespeed').length) row('PageSpeed Insights', FAIL, errFor('pagespeed').join('; '));
+  else if (!p.website && !d.website) row('PageSpeed Insights', SKIP, 'No website available.');
+  else if (d.pagespeed?.mobile || d.pagespeed?.desktop) row('PageSpeed Insights', OK, '');
+  else row('PageSpeed Insights', WARN, 'No PageSpeed data returned.');
+
+  // 6. DataForSEO
+  const dfs = d.dataForSeo || {};
+  if (errFor('dataForSeo').length) row('DataForSEO (keywords/backlinks)', FAIL, errFor('dataForSeo').join('; '));
+  else if (dfs.stub) row('DataForSEO (keywords/backlinks)', SKIP, esc(dfs.message || 'Credentials not configured.'));
+  else if (!p.website && !d.website) row('DataForSEO (keywords/backlinks)', SKIP, 'No domain available.');
+  else if ((dfs.keywords && dfs.keywords.length) || dfs.backlinks) row('DataForSEO (keywords/backlinks)', OK, `${(dfs.keywords||[]).length} keywords`);
+  else row('DataForSEO (keywords/backlinks)', WARN, 'No keyword/backlink data — domain may have no organic footprint (common for non-US domains queried against the US database).');
+
+  // 7. AI visibility
+  if (errFor('aiVisibility').length) row('AI visibility', FAIL, errFor('aiVisibility').join('; '));
+  else if (d.aiVisibility?.queries?.length) row('AI visibility', OK, `${d.aiVisibility.queries.length} queries`);
+  else row('AI visibility', WARN, 'No AI visibility queries returned.');
+
+  // 8. Recommendation
+  if (errFor('recommendation').length) row('Program recommendation', FAIL, errFor('recommendation').join('; '));
+  else if (d.recommendation) row('Program recommendation', OK, '');
+  else row('Program recommendation', WARN, 'No recommendation returned.');
+
+  const tableRows = rows.map(r => `
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:9px 10px 9px 0;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;color:var(--dark);white-space:nowrap;vertical-align:top;">${r.label}</td>
+      <td style="padding:9px 10px;vertical-align:top;">${r.badge}</td>
+      <td style="padding:9px 0;font-family:'Lato',sans-serif;font-size:12px;color:var(--text-secondary);line-height:1.5;">${r.note||''}</td>
+    </tr>`).join('');
+
+  const failCount = rows.filter(r => r.badge === FAIL).length;
+  const warnCount = rows.filter(r => r.badge === WARN).length;
+  let summary;
+  if (failCount) summary = `<span style="color:#a23535;font-weight:700;">${failCount} source(s) failed</span>${warnCount?` · ${warnCount} returned empty`:''}.`;
+  else if (warnCount) summary = `<span style="color:#9a6a00;font-weight:700;">${warnCount} source(s) returned empty data</span> — the report rendered but some sections will be blank.`;
+  else summary = `<span style="color:#1f7a54;font-weight:700;">All data sources returned data.</span>`;
+
+  const rawErrs = errs.length
+    ? `<details style="margin-top:18px;"><summary style="cursor:pointer;font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;color:var(--text-muted);">Raw error log (${errs.length})</summary><pre style="margin-top:8px;background:#f7f8f8;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;line-height:1.5;overflow-x:auto;white-space:pre-wrap;color:var(--text-secondary);">${esc(JSON.stringify(errs, null, 2))}</pre></details>`
+    : `<div style="margin-top:16px;font-family:'Lato',sans-serif;font-size:12px;color:var(--text-muted);">No thrown errors were captured. Note: a source returning empty data (above) does not always raise an error.</div>`;
+
+  return `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:16px;font-family:'Lato',sans-serif;font-size:13px;color:var(--text-secondary);line-height:1.5;">${summary}</div>
+    <table style="width:100%;border-collapse:collapse;"><tbody>${tableRows}</tbody></table>
+    ${rawErrs}`;
+}
+
 // ── EMAIL MODAL ──
 let _emailReportData = null;
 
@@ -2790,6 +2928,11 @@ function showEmailStatus(msg, type) {
 // Close email modal on backdrop click
 document.getElementById('emailModal').addEventListener('click', function(e) {
   if (e.target === this) closeEmailModal();
+});
+
+// Close diagnostics modal on backdrop click
+document.getElementById('diagModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDiagModal();
 });
 
 function resetForm(){
