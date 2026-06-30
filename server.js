@@ -721,7 +721,15 @@ app.post('/api/advice-local/scan', async (req, res) => {
     const createData = await createRes.json();
 
     if (!createData.success || !createData.data?.id) {
-      throw new Error('Advice Local create failed: ' + JSON.stringify(createData.error || createData));
+      // Surface the full response AND the payload we sent so Diagnostics can
+      // show exactly which field Advice Local rejected (e.g. a website with a
+      // query string, a malformed phone, an unsupported state/country).
+      const sent = {
+        name, phone, street, suite: suite || '', city, state, zipcode: zip,
+        country: countryCode, website: website || '',
+        hasDescription: !!description, categoryGoogle: category || ''
+      };
+      throw new Error(`Advice Local create failed (HTTP ${createRes.status}): ${JSON.stringify(createData)} — sent: ${JSON.stringify(sent)}`);
     }
 
     clientId = createData.data.id;
@@ -1082,9 +1090,13 @@ app.post('/api/dataforseo', async (req, res) => {
 // ─────────────────────────────────────────────
 app.post('/api/ai-visibility', async (req, res) => {
   const { businessName, city, state, specialty, website } = req.body;
-  const spec = specialty || 'medical aesthetics';
+  // Normalize specialty — website extraction sometimes returns "Unknown" or
+  // empty for JS-heavy sites, which produced nonsense queries like
+  // "best Unknown in Miami". Fall back to a sensible category term.
+  const rawSpec = (specialty || '').trim();
+  const spec = (!rawSpec || /^unknown$/i.test(rawSpec)) ? 'medical aesthetics' : rawSpec;
 
-  // Build 3 realistic queries a patient might ask
+  // 3 realistic queries a patient might actually ask an AI assistant
   const queries = [
     `Who offers the best ${spec} in ${city}, ${state}?`,
     `Top ${spec} providers near ${city}, ${state}`,
@@ -1104,31 +1116,37 @@ app.post('/api/ai-visibility', async (req, res) => {
         max_tokens: 1200,
         messages: [{
           role: 'user',
-          content: `You are simulating what ChatGPT would actually return when asked about local medical/aesthetics providers. This is for a marketing sales presentation showing a prospect their AI visibility.
+          content: `You ARE an AI assistant — the kind of tool patients increasingly use instead of Google to find local providers. A potential patient is asking you the three questions below. Answer each one HONESTLY and naturally, exactly as you would for a real user.
 
-Business we are analyzing: ${businessName}
+Critical rules:
+- Use ONLY real providers you actually have knowledge of for this location. NEVER invent, guess, or use placeholder names. Fabricated names would make this analysis worthless.
+- If you do not have confident knowledge of specific named providers in this area, say so plainly (e.g. "I don't have enough information to confidently recommend specific named providers in this area") and describe what you'd advise the patient to do instead. That honest answer is itself the finding.
+- After answering, determine whether "${businessName}" appeared in your answer. It almost certainly will not unless it has a strong, well-cited online presence.
+
+Business being analyzed (the prospect): ${businessName}
 Location: ${city}, ${state}
-Specialty: ${spec}
+Category: ${spec}
 Website: ${website || 'unknown'}
 
-For each of the 3 queries below, simulate what ChatGPT would realistically return — name 2-3 actual types of businesses or well-known local providers that WOULD appear (use realistic placeholder names if needed, like "Newton Dermatology Associates" or "Boston MedSpa Group"), and state clearly whether ${businessName} appears or not. Be specific and realistic — this should feel like an actual AI search result, not a generic disclaimer.
+Questions:
+1. "${queries[0]}"
+2. "${queries[1]}"
+3. "${queries[2]}"
 
-Query 1: "${queries[0]}"
-Query 2: "${queries[1]}"
-Query 3: "${queries[2]}"
+For each, write 2-4 sentences of your genuine answer. Vary the wording between answers — do not repeat the same sentence structure. Then give 2-3 specific, honest reasons why ${businessName} did or did not surface in your answers, grounded in how AI assistants decide what to cite (training-data presence, third-party citations/directories, review volume, structured content).
 
-Then provide 2-3 specific reasons why ${businessName} is NOT appearing in AI results based on their digital footprint.
-
-Return ONLY this JSON, no markdown:
+Return ONLY this JSON, no markdown, no commentary:
 {
   "queries": [
-    { "q": "${queries[0]}", "result": "2-3 sentence simulation of what ChatGPT would actually say, naming who DOES appear and noting ${businessName} is not among them", "appears": false },
-    { "q": "${queries[1]}", "result": "realistic AI result simulation", "appears": false },
-    { "q": "${queries[2]}", "result": "realistic AI result simulation", "appears": false }
+    { "q": "${queries[0]}", "result": "your genuine answer to this question", "appears": false },
+    { "q": "${queries[1]}", "result": "your genuine answer", "appears": false },
+    { "q": "${queries[2]}", "result": "your genuine answer", "appears": false }
   ],
   "appears": false,
-  "reasons": "2-3 specific reasons why this business is not appearing in AI results"
-}`
+  "reasons": "2-3 specific honest reasons tied to this business's digital footprint"
+}
+
+Set each "appears" (and the top-level "appears") to true ONLY if you genuinely named ${businessName} in that answer.`
         }]
       })
     });
@@ -1137,8 +1155,7 @@ Return ONLY this JSON, no markdown:
     const text = data.content?.[0]?.text;
     if (!text) {
       // Claude API returned an error response (bad model id, rate limit, auth)
-      // rather than throwing — fall back to the default simulation so the
-      // report never renders a blank AI-visibility section.
+      // rather than throwing — fall back so the report never renders blank.
       throw new Error(`No content in Claude response: ${JSON.stringify(data).slice(0, 300)}`);
     }
     const cleaned = text.replace(/```json|```/g, '').trim();
@@ -1146,11 +1163,17 @@ Return ONLY this JSON, no markdown:
     if (!parsed.queries || !parsed.queries.length) {
       throw new Error('Parsed AI visibility missing queries');
     }
+    // source:'claude' confirms (in Diagnostics) this is a live Claude response,
+    // not the canned fallback below.
+    parsed.source = 'claude';
+    parsed.model = 'claude-sonnet-4-6';
     res.json(parsed);
 
   } catch (err) {
     console.error('AI visibility error:', err);
     res.json({
+      source: 'fallback',
+      error: err.message,
       queries: queries.map(q => ({
         q,
         result: `${businessName} does not appear in results for this query. Established practices with strong review profiles and citation presence dominate these results.`,
@@ -1546,6 +1569,24 @@ app.post('/api/generate-report', async (req, res) => {
     // Auto-suggest target keywords based on niche
     // Priority: rep-entered keywords > forced niches > auto-detected niche
     const detectedNiche = detectNiche(specialty, category, services);
+
+    // Website extraction returns "Unknown"/empty for JS-heavy sites, which then
+    // showed up as "best Unknown in <city>" in the AI-visibility queries and as
+    // "Specialty: Unknown" on the report. Backfill a readable specialty from the
+    // detected niche so downstream output is sensible.
+    const NICHE_LABELS = {
+      medical_spa:'medical spa', hormone_therapy:'hormone therapy', weight_loss:'medical weight loss',
+      womens_health:"women's health", chiropractic:'chiropractic care', dermatology:'dermatology',
+      concierge_medicine:'concierge medicine', integrative_wellness:'integrative wellness',
+      aesthetics_skincare:'medical aesthetics', general_medical:'medical aesthetics'
+    };
+    const cleanSpecialty = (specialty && !/^unknown$/i.test(specialty.trim()))
+      ? specialty
+      : (NICHE_LABELS[detectedNiche] || 'medical aesthetics');
+    if (results.websiteExtract && (!results.websiteExtract.specialty || /^unknown$/i.test(String(results.websiteExtract.specialty).trim()))) {
+      results.websiteExtract.specialty = cleanSpecialty;
+    }
+
     let effectiveTargetKeywords;
     let effectiveNiches;
 
@@ -1583,7 +1624,7 @@ app.post('/api/generate-report', async (req, res) => {
           body: JSON.stringify({
             url: resolvedWebsite,
             businessName,
-            specialty,
+            specialty: cleanSpecialty,
             services
           })
         });
@@ -1674,7 +1715,7 @@ app.post('/api/generate-report', async (req, res) => {
       const aiRes = await fetch(`http://localhost:${PORT}/api/ai-visibility`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName, city, state, specialty, website: resolvedWebsite })
+        body: JSON.stringify({ businessName, city, state, specialty: cleanSpecialty, website: resolvedWebsite })
       });
       results.aiVisibility = await aiRes.json();
     } catch(e) { results.errors.push({ step: 'aiVisibility', error: e.message }); }
@@ -1686,7 +1727,7 @@ app.post('/api/generate-report', async (req, res) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          businessName, city, state, specialty,
+          businessName, city, state, specialty: cleanSpecialty,
           scores: {
             visibility: overview?.visibilityScore ?? null,
             nap: overview?.napScore ?? null,

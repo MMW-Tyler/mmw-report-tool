@@ -2812,9 +2812,12 @@ function buildDiagnostics(d) {
   else if ((dfs.keywords && dfs.keywords.length) || dfs.backlinks) row('DataForSEO (keywords/backlinks)', OK, `${(dfs.keywords||[]).length} keywords`);
   else row('DataForSEO (keywords/backlinks)', WARN, 'No keyword/backlink data — domain may have no organic footprint (common for non-US domains queried against the US database).');
 
-  // 7. AI visibility
+  // 7. AI visibility — distinguish a live Claude response from the canned fallback
+  const aiv = d.aiVisibility || {};
   if (errFor('aiVisibility').length) row('AI visibility', FAIL, errFor('aiVisibility').join('; '));
-  else if (d.aiVisibility?.queries?.length) row('AI visibility', OK, `${d.aiVisibility.queries.length} queries`);
+  else if (aiv.source === 'fallback') row('AI visibility', WARN, `Claude call failed — showing canned fallback text${aiv.error?` (${esc(aiv.error)})`:''}.`);
+  else if (aiv.source === 'claude') row('AI visibility', OK, `Live Claude response (${esc(aiv.model||'claude')}) · ${(aiv.queries||[]).length} queries`);
+  else if (aiv.queries?.length) row('AI visibility', OK, `${aiv.queries.length} queries`);
   else row('AI visibility', WARN, 'No AI visibility queries returned.');
 
   // 8. Recommendation
