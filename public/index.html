@@ -889,6 +889,12 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
       Review Link Generator
     </a>
     <div class="nav-badge">Marketing Analysis Tool</div>
+    <a href="#" id="diagNavLink" onclick="event.preventDefault();openDiagModal();" title="Internal diagnostics — data sources & errors for the current report"
+       style="display:none;font-family:'Barlow',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.3);text-decoration:none;padding:4px 7px;border-radius:5px;transition:color 0.15s;"
+       onmouseover="this.style.color='rgba(255,255,255,0.7)'"
+       onmouseout="this.style.color='rgba(255,255,255,0.3)'">
+      Diagnostics
+    </a>
   </div>
 </nav>
 
@@ -1104,10 +1110,6 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
         <button class="btn-rh" onclick="window.print()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           Simplified PDF
-        </button>
-        <button class="btn-rh" onclick="openDiagModal()" title="Internal: data sources & errors for this run">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-          Diagnostics
         </button>
         <button class="btn-rh" onclick="resetForm()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.36"/></svg>
@@ -2084,6 +2086,7 @@ async function generateReport(){
 // ── BUILD REPORT ──
 function buildReport(d){
   window._lastReportData = d; // retained for the internal Diagnostics panel
+  const _dn = document.getElementById('diagNavLink'); if (_dn) _dn.style.display = 'inline-block';
   const p=d.places||{};
   const we=d.websiteExtract||{};
   const ps=d.pagespeed||{};
@@ -2960,6 +2963,7 @@ function resetForm(){
   // Show intake, hide report
   document.getElementById('intakeSection').style.display = '';
   document.getElementById('reportSection').style.display = 'none';
+  const _dn = document.getElementById('diagNavLink'); if (_dn) _dn.style.display = 'none';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
