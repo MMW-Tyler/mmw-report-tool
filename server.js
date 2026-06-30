@@ -1598,12 +1598,24 @@ app.post('/api/generate-report', async (req, res) => {
     const placesFound = !!(results.places?.placeId);
     const alName   = placesFound ? results.places.name   : businessName;
     const alPhone  = placesFound ? results.places.phone  : resolvedPhone;
-    const alStreet = placesFound ? results.places.street : resolvedStreet;
     const alSuite  = placesFound ? results.places.suite  : resolvedSuite;
     const alCity   = placesFound ? results.places.city   : resolvedCity;
     const alState  = placesFound ? results.places.state  : resolvedState;
-    const alZip    = placesFound ? results.places.zip    : resolvedZip;
-    const alCountry = placesFound ? results.places.country : resolvedCountry;
+    let alStreet   = placesFound ? results.places.street : resolvedStreet;
+    let alZip      = placesFound ? results.places.zip    : resolvedZip;
+    let alCountry  = placesFound ? results.places.country : resolvedCountry;
+
+    // Safety net: results.places can arrive from confirmed-place data captured
+    // by an older client (or with sparse address_components), where street/zip/
+    // country are blank even though formattedAddress is complete. Re-derive any
+    // missing field here so the scan isn't skipped on a fully-known address.
+    const faAddr = results.places?.formattedAddress || '';
+    if (faAddr && (!alStreet || !alZip || !alCountry)) {
+      const fb = parsePlaceAddress({ formatted_address: faAddr, address_components: [] });
+      alStreet  = alStreet  || fb.street;
+      alZip     = alZip     || fb.zip;
+      alCountry = alCountry || fb.country;
+    }
 
     if (alPhone && alStreet && alZip) {
       try {
