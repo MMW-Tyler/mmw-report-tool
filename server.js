@@ -696,6 +696,14 @@ app.post('/api/advice-local/scan', async (req, res) => {
   // Normalize to a 2-letter code so CA businesses actually get scanned.
   const countryCode = (country || '').trim().toUpperCase() === 'CA' ? 'CA' : 'US';
 
+  // Advice Local requires description to be 100–2048 chars when provided.
+  // Pad a short one (rather than fail the create) and cap an over-long one.
+  let descToSend = (description || '').trim();
+  if (descToSend && descToSend.length < 100) {
+    descToSend = `${descToSend} ${name} serves clients in ${city}, ${state}. Contact the office to learn more about available services, consultations, and appointment availability.`.replace(/\s+/g, ' ').trim();
+  }
+  if (descToSend.length > 2048) descToSend = descToSend.slice(0, 2048);
+
   let clientId = null;
 
   try {
@@ -710,7 +718,7 @@ app.post('/api/advice-local/scan', async (req, res) => {
     params.append('country', countryCode);
     if (suite) params.append('suite', suite);
     if (website) params.append('website', website);
-    if (description) params.append('description', description);
+    if (descToSend) params.append('description', descToSend);
     if (category) params.append('categoryGoogle', category);
 
     const createRes = await fetch(`${AL_BASE}/legacyclients`, {
@@ -727,7 +735,7 @@ app.post('/api/advice-local/scan', async (req, res) => {
       const sent = {
         name, phone, street, suite: suite || '', city, state, zipcode: zip,
         country: countryCode, website: website || '',
-        hasDescription: !!description, categoryGoogle: category || ''
+        descriptionLength: descToSend.length, categoryGoogle: category || ''
       };
       throw new Error(`Advice Local create failed (HTTP ${createRes.status}): ${JSON.stringify(createData)} — sent: ${JSON.stringify(sent)}`);
     }
@@ -1658,6 +1666,16 @@ app.post('/api/generate-report', async (req, res) => {
       alCountry = alCountry || fb.country;
     }
 
+    // Advice Local rejects the create unless description is 100–2048 chars.
+    // Website extraction often returns a short/blank description (JS-heavy
+    // sites), so use it when it qualifies, otherwise build a professional one.
+    let alDescription = (description || '').trim();
+    if (alDescription.length < 100) {
+      const svc = (services && services.length) ? ` Services include ${services.slice(0, 6).join(', ')}.` : '';
+      alDescription = `${alName} is a ${cleanSpecialty} provider serving ${alCity}, ${alState} and the surrounding community.${svc} The practice is committed to quality patient care and offers consultations and treatments by appointment. Contact the office to learn more about services, pricing, and availability.`.replace(/\s+/g, ' ').trim();
+    }
+    if (alDescription.length > 2048) alDescription = alDescription.slice(0, 2048);
+
     if (alPhone && alStreet && alZip) {
       try {
         const alRes = await fetch(`http://localhost:${PORT}/api/advice-local/scan`, {
@@ -1673,7 +1691,7 @@ app.post('/api/generate-report', async (req, res) => {
             zip:         alZip,
             country:     alCountry,
             website:     resolvedWebsite,
-            description,
+            description: alDescription,
             category
           })
         });
