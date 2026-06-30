@@ -20,6 +20,55 @@ const DATAFORSEO_PASSWORD = process.env.DATAFORSEO_PASSWORD;
 const AL_BASE = 'https://p.lssdev.com';
 
 // ─────────────────────────────────────────────
+// ADDRESS PARSING — structured components first, formatted_address fallback.
+// Businesses inside shared spaces (e.g. salon suites like "Sola Studios")
+// often return sparse address_components that omit street_number / postal_code
+// / country even though formatted_address contains them. Without the fallback
+// those fields arrive empty and the citation scan is skipped with a misleading
+// "Missing phone/street/zip" error.
+// ─────────────────────────────────────────────
+function parsePlaceAddress(p) {
+  const components = p.address_components || [];
+  const long  = (type) => { const c = components.find(c => c.types.includes(type)); return c ? c.long_name  : ''; };
+  const short = (type) => { const c = components.find(c => c.types.includes(type)); return c ? c.short_name : ''; };
+
+  const streetNumber = long('street_number');
+  const streetName   = long('route');
+  const fa = p.formatted_address || '';
+
+  let street = streetNumber && streetName ? `${streetNumber} ${streetName}` : '';
+  if (!street && fa) street = fa.split(',')[0].trim();
+
+  let zip = long('postal_code');
+  if (!zip && fa) {
+    const ca = fa.match(/\b[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d\b/);  // Canadian postal code (distinctive)
+    if (ca) {
+      zip = ca[0].toUpperCase();
+    } else {
+      // US ZIP — take the LAST 5-digit run so a street number (e.g. "10084
+      // Reisterstown Road ... 21117") doesn't get mistaken for the ZIP.
+      const us = fa.match(/\b\d{5}(?:-\d{4})?\b/g);
+      if (us && us.length) zip = us[us.length - 1];
+    }
+  }
+
+  let country = short('country');
+  if (!country && fa) {
+    if (/\bcanada\b/i.test(fa)) country = 'CA';
+    else if (/\bUSA\b|\bunited states\b/i.test(fa)) country = 'US';
+  }
+
+  return {
+    street,
+    suite:   long('subpremise') || '',
+    city:    long('locality') || long('sublocality'),
+    state:   short('administrative_area_level_1'),
+    zip,
+    country: country || '',
+  };
+}
+
+// ─────────────────────────────────────────────
 // SUGGESTED KEYWORD SETS BY NICHE
 // [city] and [state] are replaced at runtime with the prospect's location
 // ─────────────────────────────────────────────
@@ -178,21 +227,19 @@ app.post('/api/places-details', async (req, res) => {
     }
 
     const p = detailData.result;
-    const components = p.address_components || [];
-    const getComp  = (type) => { const c = components.find(c => c.types.includes(type)); return c ? c.long_name  : ''; };
-    const getShort = (type) => { const c = components.find(c => c.types.includes(type)); return c ? c.short_name : ''; };
+    const addr = parsePlaceAddress(p);
 
     res.json({
       placeId,
       name:             p.name,
       formattedAddress: p.formatted_address,
       phone:            p.formatted_phone_number || '',
-      street:           [getComp('street_number'), getComp('route')].filter(Boolean).join(' '),
-      suite:            getComp('subpremise') || '',
-      city:             getComp('locality') || getComp('sublocality'),
-      state:            getShort('administrative_area_level_1'),
-      zip:              getComp('postal_code'),
-      country:          getShort('country') || '',
+      street:           addr.street,
+      suite:            addr.suite,
+      city:             addr.city,
+      state:            addr.state,
+      zip:              addr.zip,
+      country:          addr.country,
       website:          p.website || '',
       rating:           p.rating || null,
       reviewCount:      p.user_ratings_total || 0,
@@ -334,37 +381,19 @@ app.post('/api/places', async (req, res) => {
     }
 
     const p = detailData.result;
-
-    // Parse address components into parts
-    const components = p.address_components || [];
-    const getComponent = (type) => {
-      const c = components.find(c => c.types.includes(type));
-      return c ? c.long_name : '';
-    };
-    const getShortComponent = (type) => {
-      const c = components.find(c => c.types.includes(type));
-      return c ? c.short_name : '';
-    };
-
-    const streetNumber = getComponent('street_number');
-    const streetName = getComponent('route');
-    const suite = getComponent('subpremise');
-    const city_parsed = getComponent('locality') || getComponent('sublocality');
-    const state_parsed = getShortComponent('administrative_area_level_1');
-    const zip = getComponent('postal_code');
-    const country = getShortComponent('country');
+    const addr = parsePlaceAddress(p);
 
     res.json({
       placeId,
       name: p.name,
       formattedAddress: p.formatted_address,
       phone: p.formatted_phone_number || '',
-      street: streetNumber && streetName ? `${streetNumber} ${streetName}` : '',
-      suite: suite || '',
-      city: city_parsed,
-      state: state_parsed,
-      zip,
-      country: country || '',
+      street: addr.street,
+      suite: addr.suite,
+      city: addr.city,
+      state: addr.state,
+      zip: addr.zip,
+      country: addr.country,
       website: p.website || '',
       rating: p.rating || null,
       reviewCount: p.user_ratings_total || 0,
@@ -1598,7 +1627,8 @@ app.post('/api/generate-report', async (req, res) => {
         results.adviceLocal = await alRes.json();
       } catch(e) { results.errors.push({ step: 'adviceLocal', error: e.message }); }
     } else {
-      results.errors.push({ step: 'adviceLocal', error: 'Missing phone/street/zip — could not run citation scan' });
+      const missing = [!alPhone && 'phone', !alStreet && 'street', !alZip && 'zip'].filter(Boolean).join(', ');
+      results.errors.push({ step: 'adviceLocal', error: `Missing ${missing} — could not run citation scan (parsed from: ${results.places?.formattedAddress || 'no address'})` });
     }
 
     // ── STEP 4: PageSpeed (parallel with DataForSEO) ──
