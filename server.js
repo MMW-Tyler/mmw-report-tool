@@ -151,6 +151,29 @@ function detectNiche(specialty, googleCategory, services) {
   return 'general_medical';
 }
 
+// Map our internal niche keys to REAL Google Business Profile category slugs
+// (the part after "gcid:" in Google's taxonomy). Advice Local's categoryGoogle
+// field is validated against this taxonomy and rejects anything that isn't a
+// genuine GCID (e.g. Claude's free-form "general_business" → HTTP 400
+// "Could not find gcid"). Every slug below is a verified GBP category, so the
+// citation scan gets an accurate category instead of a hallucinated one.
+const NICHE_GCID = {
+  medical_spa:          'medical_spa',
+  hormone_therapy:      'medical_clinic',
+  weight_loss:          'weight_loss_service',
+  womens_health:        'obstetrician_gynecologist',
+  chiropractic:         'chiropractor',
+  dermatology:          'dermatologist',
+  concierge_medicine:   'doctor',
+  integrative_wellness: 'wellness_center',
+  aesthetics_skincare:  'skin_care_clinic',
+  general_medical:      'medical_clinic'
+};
+
+function nicheToGcid(niche) {
+  return NICHE_GCID[niche] || NICHE_GCID.general_medical;
+}
+
 function buildSuggestedKeywords(niche, city) {
   const templates = NICHE_KEYWORDS[niche] || NICHE_KEYWORDS.general_medical;
   const cityLower = (city || '').toLowerCase();
@@ -1698,6 +1721,13 @@ app.post('/api/generate-report', async (req, res) => {
     }
     if (alDescription.length > 2048) alDescription = alDescription.slice(0, 2048);
 
+    // Advice Local's categoryGoogle must be a real Google GCID slug. Claude's
+    // website extraction returns a free-form googleCategory that is often not a
+    // valid GCID (e.g. "general_business"), so send the verified slug mapped
+    // from the business's niche instead. Prefer the rep-selected niche when one
+    // was forced; otherwise use the auto-detected niche.
+    const alCategory = nicheToGcid((effectiveNiches && effectiveNiches[0]) || detectedNiche);
+
     if (alPhone && alStreet && alZip) {
       try {
         const alRes = await fetch(`http://localhost:${PORT}/api/advice-local/scan`, {
@@ -1714,7 +1744,7 @@ app.post('/api/generate-report', async (req, res) => {
             country:     alCountry,
             website:     resolvedWebsite,
             description: alDescription,
-            category
+            category:    alCategory
           })
         });
         results.adviceLocal = await alRes.json();
