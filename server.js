@@ -192,6 +192,7 @@ app.post('/api/places-details', async (req, res) => {
       city:             getComp('locality') || getComp('sublocality'),
       state:            getShort('administrative_area_level_1'),
       zip:              getComp('postal_code'),
+      country:          getShort('country') || '',
       website:          p.website || '',
       rating:           p.rating || null,
       reviewCount:      p.user_ratings_total || 0,
@@ -351,6 +352,7 @@ app.post('/api/places', async (req, res) => {
     const city_parsed = getComponent('locality') || getComponent('sublocality');
     const state_parsed = getShortComponent('administrative_area_level_1');
     const zip = getComponent('postal_code');
+    const country = getShortComponent('country');
 
     res.json({
       placeId,
@@ -362,6 +364,7 @@ app.post('/api/places', async (req, res) => {
       city: city_parsed,
       state: state_parsed,
       zip,
+      country: country || '',
       website: p.website || '',
       rating: p.rating || null,
       reviewCount: p.user_ratings_total || 0,
@@ -653,10 +656,16 @@ Return ONLY this JSON, no markdown:
 // ADVICE LOCAL — create client, get report, delete
 // ─────────────────────────────────────────────
 app.post('/api/advice-local/scan', async (req, res) => {
-  const { name, phone, street, suite, city, state, zip, website, description, category } = req.body;
+  const { name, phone, street, suite, city, state, zip, website, description, category, country } = req.body;
   if (!name || !phone || !street || !city || !state || !zip) {
     return res.status(400).json({ error: 'Missing required business fields' });
   }
+
+  // Advice Local supports US and Canada. The legacyclients model defaults to
+  // "US" when no country is sent, which silently returns an EMPTY directory
+  // scan for Canadian addresses (province in state, alphanumeric postal code).
+  // Normalize to a 2-letter code so CA businesses actually get scanned.
+  const countryCode = (country || '').trim().toUpperCase() === 'CA' ? 'CA' : 'US';
 
   let clientId = null;
 
@@ -669,6 +678,7 @@ app.post('/api/advice-local/scan', async (req, res) => {
     params.append('city', city);
     params.append('state', state);
     params.append('zipcode', zip);
+    params.append('country', countryCode);
     if (suite) params.append('suite', suite);
     if (website) params.append('website', website);
     if (description) params.append('description', description);
@@ -715,7 +725,7 @@ app.post('/api/advice-local/scan', async (req, res) => {
       headers: { 'x-api-token': AL_KEY, 'Content-Type': 'application/json' }
     });
 
-    res.json({ success: true, clientId, report: reportData });
+    res.json({ success: true, clientId, country: countryCode, report: reportData });
 
   } catch (err) {
     // Attempt cleanup
@@ -1485,6 +1495,7 @@ app.post('/api/generate-report', async (req, res) => {
     const resolvedCity = results.places?.city || city;
     const resolvedState = results.places?.state || state;
     const resolvedZip = results.places?.zip || '';
+    const resolvedCountry = results.places?.country || '';
 
     // ── STEP 2: Website extraction ──
     if (resolvedWebsite) {
@@ -1563,6 +1574,7 @@ app.post('/api/generate-report', async (req, res) => {
     const alCity   = placesFound ? results.places.city   : resolvedCity;
     const alState  = placesFound ? results.places.state  : resolvedState;
     const alZip    = placesFound ? results.places.zip    : resolvedZip;
+    const alCountry = placesFound ? results.places.country : resolvedCountry;
 
     if (alPhone && alStreet && alZip) {
       try {
@@ -1577,6 +1589,7 @@ app.post('/api/generate-report', async (req, res) => {
             city:        alCity,
             state:       alState,
             zip:         alZip,
+            country:     alCountry,
             website:     resolvedWebsite,
             description,
             category
