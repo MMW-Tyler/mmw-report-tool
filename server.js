@@ -707,26 +707,48 @@ app.post('/api/advice-local/scan', async (req, res) => {
   let clientId = null;
 
   try {
-    // Create client
-    const params = new URLSearchParams();
-    params.append('name', name);
-    params.append('phone', phone);
-    params.append('street', street);
-    params.append('city', city);
-    params.append('state', state);
-    params.append('zipcode', zip);
-    params.append('country', countryCode);
-    if (suite) params.append('suite', suite);
-    if (website) params.append('website', website);
-    if (descToSend) params.append('description', descToSend);
-    if (category) params.append('categoryGoogle', category);
+    // Build the create payload. categoryGoogle is an OPTIONAL enrichment field —
+    // it's kept separate so we can drop it and retry if Advice Local rejects it.
+    const buildParams = (includeCategory) => {
+      const params = new URLSearchParams();
+      params.append('name', name);
+      params.append('phone', phone);
+      params.append('street', street);
+      params.append('city', city);
+      params.append('state', state);
+      params.append('zipcode', zip);
+      params.append('country', countryCode);
+      if (suite) params.append('suite', suite);
+      if (website) params.append('website', website);
+      if (descToSend) params.append('description', descToSend);
+      if (includeCategory && category) params.append('categoryGoogle', category);
+      return params;
+    };
 
-    const createRes = await fetch(`${AL_BASE}/legacyclients`, {
+    const doCreate = (includeCategory) => fetch(`${AL_BASE}/legacyclients`, {
       method: 'POST',
       headers: { 'x-api-token': AL_KEY, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString()
+      body: buildParams(includeCategory).toString()
     });
-    const createData = await createRes.json();
+
+    // Create client (first attempt includes the Google category if we have one)
+    let categorySent = !!category;
+    let createRes = await doCreate(true);
+    let createData = await createRes.json();
+
+    // The category slug comes from Claude's website extraction and can be a
+    // hallucinated/non-existent GCID (e.g. "general_business"), which Advice
+    // Local rejects with HTTP 400 "Could not find gcid". categoryGoogle is only
+    // an optional refinement, so don't let a bad category sink the entire
+    // citation scan — drop it and retry the create without it.
+    const isGcidError = (data) =>
+      /could not find gcid|gcid:/i.test(JSON.stringify(data || ''));
+    if (category && (!createData.success || !createData.data?.id) && isGcidError(createData)) {
+      console.log(`Advice Local: invalid Google category "${category}" — retrying create without categoryGoogle`);
+      categorySent = false;
+      createRes = await doCreate(false);
+      createData = await createRes.json();
+    }
 
     if (!createData.success || !createData.data?.id) {
       // Surface the full response AND the payload we sent so Diagnostics can
@@ -735,7 +757,7 @@ app.post('/api/advice-local/scan', async (req, res) => {
       const sent = {
         name, phone, street, suite: suite || '', city, state, zipcode: zip,
         country: countryCode, website: website || '',
-        descriptionLength: descToSend.length, categoryGoogle: category || ''
+        descriptionLength: descToSend.length, categoryGoogle: categorySent ? (category || '') : ''
       };
       throw new Error(`Advice Local create failed (HTTP ${createRes.status}): ${JSON.stringify(createData)} — sent: ${JSON.stringify(sent)}`);
     }
