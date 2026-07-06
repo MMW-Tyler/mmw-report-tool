@@ -519,7 +519,7 @@ async function generateReport(data) {
   // etv is DataForSEO's estimated organic visits PER MONTH (search volume x
   // CTR-by-position). It was previously multiplied by 12 here, which inflated
   // the "organic visits/mo" card 12x and made the report wildly disagree with
-  // tools like SimilarWeb. Never multiply by 12 or show etv as dollars — the
+  // tools like SimilarWeb. Never multiply by 12 or show etv as dollars; the
   // dollar figure is estimatedPaidTrafficCost.
   const etv       = dfs.domainOverview?.etv ?? 0;
   const ptc       = dfs.domainOverview?.estimatedPaidTrafficCost ?? 0;
@@ -585,7 +585,7 @@ async function generateReport(data) {
     spacer(12),
 
     greenSubHeading('Your Website Traffic Snapshot', SZ_SECTION),
-    body('Estimated monthly organic traffic is based on your current keyword rankings and their associated search volumes. This is Google search-driven traffic only — the kind MMW directly improves. It excludes direct, social, referral, and paid visits, so tools that estimate total site traffic (such as SimilarWeb) will naturally show a different, usually higher, number. All third-party traffic figures are modeled estimates, not analytics.'),
+    body('Estimated monthly organic traffic is based on your current keyword rankings and their associated search volumes. This is Google search-driven traffic only, the kind MMW directly improves. It excludes direct, social, referral, and paid visits, so tools that estimate total site traffic (such as SimilarWeb) will naturally show a different, usually higher, number. All third-party traffic figures are modeled estimates, not analytics.'),
     spacer(6),
     metricGrid([
       { label: 'Est. Monthly Organic Traffic', value: estMonthly ? `~${estMonthly.toLocaleString()}` : 'Minimal', sub: estMonthly ? 'organic visits/mo' : 'Low organic presence', raw: estMonthly ? (estMonthly > 500 ? 75 : estMonthly > 100 ? 45 : 20) : 10, explain: 'Google organic search visits only, modeled from keyword rankings and search volume. Higher traffic = more patients finding you without ads.' },

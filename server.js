@@ -141,7 +141,7 @@ const NICHE_KEYWORDS = {
 };
 
 // Map specialty/category strings to niche keys.
-// The stated specialty is classified FIRST, on its own — service lists often
+// The stated specialty is classified FIRST, on its own; service lists often
 // mention crossover offerings (a naturopath listing "hormone testing", a
 // chiropractor listing "weight loss coaching") that would otherwise hijack
 // the niche. Only when the specialty alone is inconclusive does the combined
@@ -650,7 +650,7 @@ app.post('/api/website-audit', async (req, res) => {
         max_tokens: 1200,
         messages: [{
           role: 'user',
-          content: `You are auditing a healthcare practice website for a marketing sales presentation. Be direct, specific, and actionable. This is for a sales rep to show a prospect what's wrong with their site. Tailor every finding to this practice's actual specialty — do not assume it is a med spa or aesthetics practice unless the specialty says so.
+          content: `You are auditing a healthcare practice website for a marketing sales presentation. Be direct, specific, and actionable. This is for a sales rep to show a prospect what's wrong with their site. Tailor every finding to this practice's actual specialty. Do not assume it is a med spa or aesthetics practice unless the specialty says so.
 
 Business: ${businessName}
 Specialty: ${specialty || 'healthcare'}
@@ -959,7 +959,7 @@ app.post('/api/dataforseo', async (req, res) => {
                      (organic.pos_4_10 || 0) + (organic.pos_11_20 || 0),
       // etv = DataForSEO's Estimated Traffic Volume: estimated organic visits
       // PER MONTH (search volume x CTR-by-position). It is NOT a dollar amount
-      // and NOT an annual figure — do not multiply by 12 or prefix with $.
+      // and NOT an annual figure, so do not multiply by 12 or prefix with $.
       etv: organic.etv || 0,
       // The dollar figure lives here: what the same clicks would cost in ads.
       estimatedPaidTrafficCost: organic.estimated_paid_traffic_cost || 0,
@@ -1167,12 +1167,12 @@ app.post('/api/ai-visibility', async (req, res) => {
   // Normalize specialty — website extraction sometimes returns "Unknown" or
   // empty for JS-heavy sites, which produced nonsense queries like
   // "best Unknown in Miami". Fall back to a neutral category term (NOT
-  // "medical aesthetics" — reps run this tool for naturopaths, chiropractors,
+  // "medical aesthetics", since reps run this tool for naturopaths, chiropractors,
   // hormone clinics, etc., and med-spa questions read as wrong to prospects).
   const rawSpec = (specialty || '').trim();
   const spec = (!rawSpec || /^unknown$/i.test(rawSpec)) ? 'medical care' : rawSpec;
 
-  // Template queries — used only as the error fallback. In the live path,
+  // Template queries, used only as the error fallback. In the live path,
   // Claude writes the queries itself so the wording matches how a patient
   // would actually ask for THIS provider type (e.g. "naturopathic doctor",
   // not a generic med-spa phrasing).
@@ -1203,9 +1203,9 @@ Category/specialty: ${spec}
 ${services && services.length ? `Services offered: ${services.slice(0, 8).join(', ')}` : ''}
 Website: ${website || 'unknown'}
 
-STEP 1 — Write the 3 questions a real patient in ${city}, ${state} would ask an AI assistant when looking for THIS type of provider. Match the category exactly and use the words a patient would actually use for it (a naturopathic practice → "naturopathic doctor", a chiropractor → "chiropractor", a hormone clinic → "hormone therapy", a med spa → "med spa"). Do NOT default to medical spa or aesthetics wording unless that is genuinely this business's category. One question should ask who is best, one should ask for top providers nearby, one should ask about reviews or recommendations. Each must name the location.
+STEP 1: Write the 3 questions a real patient in ${city}, ${state} would ask an AI assistant when looking for THIS type of provider. Match the category exactly and use the words a patient would actually use for it (a naturopathic practice → "naturopathic doctor", a chiropractor → "chiropractor", a hormone clinic → "hormone therapy", a med spa → "med spa"). Do NOT default to medical spa or aesthetics wording unless that is genuinely this business's category. One question should ask who is best, one should ask for top providers nearby, one should ask about reviews or recommendations. Each must name the location.
 
-STEP 2 — Answer each of your 3 questions HONESTLY and naturally, exactly as you would for a real user.
+STEP 2: Answer each of your 3 questions HONESTLY and naturally, exactly as you would for a real user.
 
 Critical rules:
 - Use ONLY real providers you actually have knowledge of for this location. NEVER invent, guess, or use placeholder names. Fabricated names would make this analysis worthless.

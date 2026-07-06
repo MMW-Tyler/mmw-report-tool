@@ -3074,7 +3074,7 @@ function buildPresentationSlides(d) {
   const p1kws = allKws.filter(k => k.isPage1).length;
   const rankedKws = allKws.filter(k => k.position && k.position > 0);
   const allDirs = [...(baseline.locals||[]), ...(baseline.directories||[])];
-  // etv is DataForSEO's estimated organic visits PER MONTH — never multiply
+  // etv is DataForSEO's estimated organic visits PER MONTH, so never multiply
   // by 12 or show as dollars. The dollar figure is estimatedPaidTrafficCost.
   const etv = dfs.domainOverview?.etv ?? 0;
   const ptc = dfs.domainOverview?.estimatedPaidTrafficCost ?? 0;
@@ -3154,7 +3154,7 @@ function buildPresentationSlides(d) {
         <div class="pres-section-title">What Do People See When They <em>Research You?</em></div>
         <div class="pres-section-sub">${website?`<a href="${website}" target="_blank" style="color:var(--green);text-decoration:none;font-weight:600;">${website.replace(/https?:\/\//,'')}</a> · Your website is often your first impression — and it's either building trust or losing it.`:'Website not found'}</div>
         <div class="pres-metric-grid cols-3" style="margin-bottom:12px;">
-          ${metricCard('Est. Monthly Organic Traffic', etv>0?'~'+(Math.round(etv)).toLocaleString():'Minimal', sc(etv>0?(etv>500?75:etv>100?45:20):10), etv>0?'organic visits/mo':'Low organic presence', 'Modeled from keyword rankings x search volume. Counts Google organic visits only — tools that estimate ALL traffic (direct, social, ads) will show different numbers')}
+          ${metricCard('Est. Monthly Organic Traffic', etv>0?'~'+(Math.round(etv)).toLocaleString():'Minimal', sc(etv>0?(etv>500?75:etv>100?45:20):10), etv>0?'organic visits/mo':'Low organic presence', 'Modeled from keyword rankings x search volume. Counts Google organic visits only. Tools that estimate ALL traffic (direct, social, ads) will show different numbers')}
           ${metricCard('Page 1 Keywords', p1kws, sc(p1kws>=5?75:p1kws>=1?45:10), 'in Google top 10', 'Keywords where your site appears on the first page of Google')}
           ${metricCard('Domain Rank', bl.domainRank??'N/A', sc(bl.domainRank), 'authority score', 'Your website\'s overall authority. Higher = more trust from Google')}
         </div>
