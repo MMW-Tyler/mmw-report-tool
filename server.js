@@ -120,6 +120,12 @@ const NICHE_KEYWORDS = {
     'alternative medicine [city]', 'IV therapy [city]',
     'functional wellness [city]', 'holistic health [city]'
   ],
+  naturopathic: [
+    'naturopathic doctor [city]', 'naturopath near me',
+    'naturopathic medicine [city]', 'holistic doctor [city]',
+    'functional medicine doctor [city]', 'natural medicine clinic [city]',
+    'alternative medicine doctor [city]', 'best naturopathic doctor [city]'
+  ],
   aesthetics_skincare: [
     'skin care clinic [city]', 'facial near me',
     'chemical peel [city]', 'microneedling [city]',
@@ -134,21 +140,30 @@ const NICHE_KEYWORDS = {
   ]
 };
 
-// Map specialty/category strings to niche keys
+// Map specialty/category strings to niche keys.
+// The stated specialty is classified FIRST, on its own; service lists often
+// mention crossover offerings (a naturopath listing "hormone testing", a
+// chiropractor listing "weight loss coaching") that would otherwise hijack
+// the niche. Only when the specialty alone is inconclusive does the combined
+// specialty + category + services text decide.
 function detectNiche(specialty, googleCategory, services) {
-  const text = [specialty, googleCategory, ...(services||[])].join(' ').toLowerCase();
+  const classify = (text) => {
+    if (/naturopath/.test(text)) return 'naturopathic';
+    if (/spa|botox|filler|coolsculpt|aesthetic|medspa|med spa/.test(text)) return 'medical_spa';
+    if (/hormone|testosterone|bioidentical|menopause|thyroid|functional medicine/.test(text)) return 'hormone_therapy';
+    if (/weight loss|bariatric|semaglutide|glp|wegovy|tirzepatide|obesity/.test(text)) return 'weight_loss';
+    if (/gynecol|obgyn|ob-gyn|women.s health|pelvic|vaginal|urogyn/.test(text)) return 'womens_health';
+    if (/chiropractic|chiropractor|spine|spinal|decompression/.test(text)) return 'chiropractic';
+    if (/dermatol|skin cancer|acne|eczema|psoriasis/.test(text)) return 'dermatology';
+    if (/concierge|direct primary|executive health|preventive/.test(text)) return 'concierge_medicine';
+    if (/integrative|holistic|wellness|alternative medicine|iv therapy/.test(text)) return 'integrative_wellness';
+    if (/esthetician|facial|peel|microneedl|hydrafacial|skin care/.test(text)) return 'aesthetics_skincare';
+    return null;
+  };
 
-  if (/spa|botox|filler|coolsculpt|aesthetic|medspa|med spa/.test(text)) return 'medical_spa';
-  if (/hormone|testosterone|bioidentical|menopause|thyroid|functional medicine/.test(text)) return 'hormone_therapy';
-  if (/weight loss|bariatric|semaglutide|glp|wegovy|tirzepatide|obesity/.test(text)) return 'weight_loss';
-  if (/gynecol|obgyn|ob-gyn|women.s health|pelvic|vaginal|urogyn/.test(text)) return 'womens_health';
-  if (/chiropractic|chiropractor|spine|spinal|decompression/.test(text)) return 'chiropractic';
-  if (/dermatol|skin cancer|acne|eczema|psoriasis/.test(text)) return 'dermatology';
-  if (/concierge|direct primary|executive health|preventive/.test(text)) return 'concierge_medicine';
-  if (/integrative|holistic|naturopath|wellness|alternative medicine|iv therapy/.test(text)) return 'integrative_wellness';
-  if (/esthetician|facial|peel|microneedl|hydrafacial|skin care/.test(text)) return 'aesthetics_skincare';
-
-  return 'general_medical';
+  return classify((specialty || '').toLowerCase())
+      || classify([specialty, googleCategory, ...(services || [])].join(' ').toLowerCase())
+      || 'general_medical';
 }
 
 // Map our internal niche keys to REAL Google Business Profile category slugs
@@ -166,6 +181,7 @@ const NICHE_GCID = {
   dermatology:          'dermatologist',
   concierge_medicine:   'doctor',
   integrative_wellness: 'wellness_center',
+  naturopathic:         'naturopathic_practitioner',
   aesthetics_skincare:  'skin_care_clinic',
   general_medical:      'medical_clinic'
 };
@@ -543,7 +559,7 @@ ${text}
 
 Return this exact JSON structure:
 {
-  "specialty": "primary specialty or service type (e.g. Medical Aesthetics, Hormone Therapy, Medical Spa)",
+  "specialty": "primary specialty or service type in the practice's own words (e.g. Naturopathic Medicine, Chiropractic, Dermatology, Hormone Therapy, Medical Spa, Medical Aesthetics). Do NOT default to Medical Aesthetics — use what this site actually is",
   "description": "1-2 sentence business description suitable for directory listings",
   "services": ["service1", "service2", "service3"],
   "googleCategory": "best matching Google Business category slug (e.g. skin_care_clinic, medical_spa, wellness_center)",
@@ -634,10 +650,10 @@ app.post('/api/website-audit', async (req, res) => {
         max_tokens: 1200,
         messages: [{
           role: 'user',
-          content: `You are auditing a medical aesthetics or healthcare practice website for a marketing sales presentation. Be direct, specific, and actionable. This is for a sales rep to show a prospect what's wrong with their site.
+          content: `You are auditing a healthcare practice website for a marketing sales presentation. Be direct, specific, and actionable. This is for a sales rep to show a prospect what's wrong with their site. Tailor every finding to this practice's actual specialty. Do not assume it is a med spa or aesthetics practice unless the specialty says so.
 
 Business: ${businessName}
-Specialty: ${specialty || 'medical aesthetics'}
+Specialty: ${specialty || 'healthcare'}
 Services listed on site: ${(services || []).join(', ')}
 URL: ${url}
 
@@ -941,7 +957,12 @@ app.post('/api/dataforseo', async (req, res) => {
                  (organic.pos_81_90 || 0) + (organic.pos_91_100 || 0),
       totalKeywords: (organic.pos_1 || 0) + (organic.pos_2_3 || 0) +
                      (organic.pos_4_10 || 0) + (organic.pos_11_20 || 0),
-      etv: organic.etv || 0, // estimated traffic value
+      // etv = DataForSEO's Estimated Traffic Volume: estimated organic visits
+      // PER MONTH (search volume x CTR-by-position). It is NOT a dollar amount
+      // and NOT an annual figure, so do not multiply by 12 or prefix with $.
+      etv: organic.etv || 0,
+      // The dollar figure lives here: what the same clicks would cost in ads.
+      estimatedPaidTrafficCost: organic.estimated_paid_traffic_cost || 0,
     };
 
     // State abbreviation -> full name for DataForSEO location_name
@@ -1142,14 +1163,19 @@ app.post('/api/dataforseo', async (req, res) => {
 // CLAUDE — AI visibility check
 // ─────────────────────────────────────────────
 app.post('/api/ai-visibility', async (req, res) => {
-  const { businessName, city, state, specialty, website } = req.body;
+  const { businessName, city, state, specialty, website, services } = req.body;
   // Normalize specialty — website extraction sometimes returns "Unknown" or
   // empty for JS-heavy sites, which produced nonsense queries like
-  // "best Unknown in Miami". Fall back to a sensible category term.
+  // "best Unknown in Miami". Fall back to a neutral category term (NOT
+  // "medical aesthetics", since reps run this tool for naturopaths, chiropractors,
+  // hormone clinics, etc., and med-spa questions read as wrong to prospects).
   const rawSpec = (specialty || '').trim();
-  const spec = (!rawSpec || /^unknown$/i.test(rawSpec)) ? 'medical aesthetics' : rawSpec;
+  const spec = (!rawSpec || /^unknown$/i.test(rawSpec)) ? 'medical care' : rawSpec;
 
-  // 3 realistic queries a patient might actually ask an AI assistant
+  // Template queries, used only as the error fallback. In the live path,
+  // Claude writes the queries itself so the wording matches how a patient
+  // would actually ask for THIS provider type (e.g. "naturopathic doctor",
+  // not a generic med-spa phrasing).
   const queries = [
     `Who offers the best ${spec} in ${city}, ${state}?`,
     `Top ${spec} providers near ${city}, ${state}`,
@@ -1169,31 +1195,31 @@ app.post('/api/ai-visibility', async (req, res) => {
         max_tokens: 1200,
         messages: [{
           role: 'user',
-          content: `You ARE an AI assistant — the kind of tool patients increasingly use instead of Google to find local providers. A potential patient is asking you the three questions below. Answer each one HONESTLY and naturally, exactly as you would for a real user.
+          content: `You ARE an AI assistant — the kind of tool patients increasingly use instead of Google to find local providers.
+
+Business being analyzed (the prospect): ${businessName}
+Location: ${city}, ${state}
+Category/specialty: ${spec}
+${services && services.length ? `Services offered: ${services.slice(0, 8).join(', ')}` : ''}
+Website: ${website || 'unknown'}
+
+STEP 1: Write the 3 questions a real patient in ${city}, ${state} would ask an AI assistant when looking for THIS type of provider. Match the category exactly and use the words a patient would actually use for it (a naturopathic practice → "naturopathic doctor", a chiropractor → "chiropractor", a hormone clinic → "hormone therapy", a med spa → "med spa"). Do NOT default to medical spa or aesthetics wording unless that is genuinely this business's category. One question should ask who is best, one should ask for top providers nearby, one should ask about reviews or recommendations. Each must name the location.
+
+STEP 2: Answer each of your 3 questions HONESTLY and naturally, exactly as you would for a real user.
 
 Critical rules:
 - Use ONLY real providers you actually have knowledge of for this location. NEVER invent, guess, or use placeholder names. Fabricated names would make this analysis worthless.
 - If you do not have confident knowledge of specific named providers in this area, say so plainly (e.g. "I don't have enough information to confidently recommend specific named providers in this area") and describe what you'd advise the patient to do instead. That honest answer is itself the finding.
 - After answering, determine whether "${businessName}" appeared in your answer. It almost certainly will not unless it has a strong, well-cited online presence.
 
-Business being analyzed (the prospect): ${businessName}
-Location: ${city}, ${state}
-Category: ${spec}
-Website: ${website || 'unknown'}
-
-Questions:
-1. "${queries[0]}"
-2. "${queries[1]}"
-3. "${queries[2]}"
-
-For each, write 2-4 sentences of your genuine answer. Vary the wording between answers — do not repeat the same sentence structure. Then give 2-3 specific, honest reasons why ${businessName} did or did not surface in your answers, grounded in how AI assistants decide what to cite (training-data presence, third-party citations/directories, review volume, structured content).
+For each answer, write 2-4 sentences. Vary the wording between answers — do not repeat the same sentence structure. Then give 2-3 specific, honest reasons why ${businessName} did or did not surface in your answers, grounded in how AI assistants decide what to cite (training-data presence, third-party citations/directories, review volume, structured content).
 
 Return ONLY this JSON, no markdown, no commentary:
 {
   "queries": [
-    { "q": "${queries[0]}", "result": "your genuine answer to this question", "appears": false },
-    { "q": "${queries[1]}", "result": "your genuine answer", "appears": false },
-    { "q": "${queries[2]}", "result": "your genuine answer", "appears": false }
+    { "q": "your first patient question", "result": "your genuine answer to this question", "appears": false },
+    { "q": "your second patient question", "result": "your genuine answer", "appears": false },
+    { "q": "your third patient question", "result": "your genuine answer", "appears": false }
   ],
   "appears": false,
   "reasons": "2-3 specific honest reasons tied to this business's digital footprint"
@@ -1260,7 +1286,7 @@ app.post('/api/recommendation', async (req, res) => {
           content: `You are a marketing strategist at Medical Marketing Whiz recommending a program tier to a prospect based on their digital presence analysis.
 
 Prospect: ${businessName}, ${city} ${state}
-Specialty: ${specialty || 'medical aesthetics'}
+Specialty: ${specialty || 'healthcare'}
 
 Analysis scores:
 - Visibility: ${scores.visibility ?? 'unknown'}%
@@ -1631,7 +1657,8 @@ app.post('/api/generate-report', async (req, res) => {
       medical_spa:'medical spa', hormone_therapy:'hormone therapy', weight_loss:'medical weight loss',
       womens_health:"women's health", chiropractic:'chiropractic care', dermatology:'dermatology',
       concierge_medicine:'concierge medicine', integrative_wellness:'integrative wellness',
-      aesthetics_skincare:'medical aesthetics', general_medical:'medical aesthetics'
+      naturopathic:'naturopathic medicine',
+      aesthetics_skincare:'medical aesthetics', general_medical:'medical care'
     };
     const cleanSpecialty = (specialty && !/^unknown$/i.test(specialty.trim()))
       ? specialty
@@ -1785,7 +1812,7 @@ app.post('/api/generate-report', async (req, res) => {
       const aiRes = await fetch(`http://localhost:${PORT}/api/ai-visibility`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName, city, state, specialty: cleanSpecialty, website: resolvedWebsite })
+        body: JSON.stringify({ businessName, city, state, specialty: cleanSpecialty, website: resolvedWebsite, services })
       });
       results.aiVisibility = await aiRes.json();
     } catch(e) { results.errors.push({ step: 'aiVisibility', error: e.message }); }

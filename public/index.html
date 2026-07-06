@@ -997,6 +997,7 @@ footer { position: relative; z-index: 1; border-top: 1px solid var(--border); pa
         <button type="button" class="niche-pill" data-niche="dermatology" onclick="toggleNiche(this)">Dermatology</button>
         <button type="button" class="niche-pill" data-niche="concierge_medicine" onclick="toggleNiche(this)">Concierge Medicine</button>
         <button type="button" class="niche-pill" data-niche="integrative_wellness" onclick="toggleNiche(this)">Integrative / Wellness</button>
+        <button type="button" class="niche-pill" data-niche="naturopathic" onclick="toggleNiche(this)">Naturopathic</button>
       </div>
       <div style="font-family:'Lato',sans-serif;font-size:12px;font-weight:300;color:var(--text-muted);margin-top:8px;line-height:1.5;" id="nicheHint">
         Keywords will be auto-suggested based on the clinic's detected specialty. Select up to 3 niches manually to override.
@@ -2276,7 +2277,8 @@ function buildReport(d){
     bar('Positions 4–10',dov.pos4_10||0,maxBar,'warn')+
     bar('Positions 11–20',dov.pos11_20||0,maxBar,'bad')+
     bar('Positions 21–100',dov.pos21_100||0,maxBar,'bad')+
-    dr('Est. Monthly Traffic Value',dov.etv?'$'+dov.etv.toFixed(2):'$0.00','');
+    dr('Est. Organic Visits / mo',dov.etv?'~'+Math.round(dov.etv).toLocaleString():'0','')+
+    dr('Est. Monthly Traffic Value',dov.estimatedPaidTrafficCost?'$'+Number(dov.estimatedPaidTrafficCost).toFixed(2):'$0.00','');
 
   // ── KEYWORDS: TABLE ──
   const kws=dfs.keywords||[];
@@ -2288,7 +2290,7 @@ function buildReport(d){
   const targetRanking=targetKws.filter(k=>k.position).length;
 
   // Build badge — show target count and niche
-  const nicheLabels={medical_spa:'Medical Spa',hormone_therapy:'Hormone Therapy',weight_loss:'Weight Loss',womens_health:"Women's Health",chiropractic:'Chiropractic',dermatology:'Dermatology',concierge_medicine:'Concierge Medicine',integrative_wellness:'Integrative Wellness',aesthetics_skincare:'Aesthetics / Skin Care',general_medical:'General Medical'};
+  const nicheLabels={medical_spa:'Medical Spa',hormone_therapy:'Hormone Therapy',weight_loss:'Weight Loss',womens_health:"Women's Health",chiropractic:'Chiropractic',dermatology:'Dermatology',concierge_medicine:'Concierge Medicine',integrative_wellness:'Integrative Wellness',naturopathic:'Naturopathic',aesthetics_skincare:'Aesthetics / Skin Care',general_medical:'General Medical'};
   const nicheLabel=effectiveNiches.map(n=>nicheLabels[n]||n).join(' + ');
   let kwBadgeHtml=`<span class="badge ${p1>0?'bw':'bb'}">${p1} on page 1</span>`;
   if(targetKws.length>0) kwBadgeHtml+=` <span class="badge" style="background:var(--dark);color:#fff;margin-left:4px;">${targetKws.length} target kw${targetKws.length>1?'s':''}</span>`;
@@ -2434,7 +2436,7 @@ function buildReport(d){
   }
 
   // ── AI ──
-  const spec=we.specialty||'medical aesthetics';
+  const spec=we.specialty||'medical care';
   const cs=[p.city||d.city,p.state||d.state].filter(Boolean).join(', ');
 
   // New multi-query format
@@ -2631,7 +2633,7 @@ function buildCompetitive(d) {
     <td><span class="kw-pos good">${dov.pos1||0}</span></td>
     <td><span class="kw-pos ${(dov.pos1||0)+(dov.pos2_3||0)>0?'warn':'bad'}">${(dov.pos1||0)+(dov.pos2_3||0)}</span></td>
     <td style="font-size:13px;color:var(--text-secondary);">${bl.domainRank||0}</td>
-    <td style="font-size:13px;color:var(--text-secondary);">${dov.etv?'$'+dov.etv.toFixed(2):'$0.00'}</td>
+    <td style="font-size:13px;color:var(--text-secondary);">${dov.etv?'~'+Math.round(dov.etv).toLocaleString():'0'}</td>
   </tr>`;
 
   const competitorRows = competitors.map(c => {
@@ -2642,7 +2644,7 @@ function buildCompetitive(d) {
       <td><span class="kw-pos ${c.pos1>2?'bad':c.pos1>0?'warn':'good'}">${c.pos1}</span></td>
       <td><span class="kw-pos ${c.pos1_3>3?'bad':c.pos1_3>0?'warn':'good'}">${c.pos1_3}</span></td>
       <td style="font-size:13px;color:var(--text-secondary);">—</td>
-      <td style="font-size:13px;color:var(--text-secondary);">${c.etv?'$'+Number(c.etv).toFixed(2):'$0.00'}</td>
+      <td style="font-size:13px;color:var(--text-secondary);">${c.etv?'~'+Math.round(Number(c.etv)).toLocaleString():'0'}</td>
     </tr>`;
   }).join('');
 
@@ -2654,7 +2656,7 @@ function buildCompetitive(d) {
         <span style="margin-left:auto;font-family:'Lato',sans-serif;font-size:11px;font-weight:300;color:var(--text-muted);">Lower is better for competitors · Higher is better for client</span>
       </div>
       <table class="kw-table">
-        <thead><tr><th>Domain</th><th>Total Keywords</th><th>#1 Rankings</th><th>Top 3</th><th>Domain Rank</th><th>Est. Traffic Value</th></tr></thead>
+        <thead><tr><th>Domain</th><th>Total Keywords</th><th>#1 Rankings</th><th>Top 3</th><th>Domain Rank</th><th>Est. Organic Visits/mo</th></tr></thead>
         <tbody>${prospectRow}${competitorRows}</tbody>
       </table>
     </div>`;
@@ -3072,7 +3074,10 @@ function buildPresentationSlides(d) {
   const p1kws = allKws.filter(k => k.isPage1).length;
   const rankedKws = allKws.filter(k => k.position && k.position > 0);
   const allDirs = [...(baseline.locals||[]), ...(baseline.directories||[])];
+  // etv is DataForSEO's estimated organic visits PER MONTH, so never multiply
+  // by 12 or show as dollars. The dollar figure is estimatedPaidTrafficCost.
   const etv = dfs.domainOverview?.etv ?? 0;
+  const ptc = dfs.domainOverview?.estimatedPaidTrafficCost ?? 0;
   const date = new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'});
 
   function sc(v) { if(v===null||v===undefined)return''; if(v>=65)return'good'; if(v>=35)return'warn'; return'bad'; }
@@ -3149,7 +3154,7 @@ function buildPresentationSlides(d) {
         <div class="pres-section-title">What Do People See When They <em>Research You?</em></div>
         <div class="pres-section-sub">${website?`<a href="${website}" target="_blank" style="color:var(--green);text-decoration:none;font-weight:600;">${website.replace(/https?:\/\//,'')}</a> · Your website is often your first impression — and it's either building trust or losing it.`:'Website not found'}</div>
         <div class="pres-metric-grid cols-3" style="margin-bottom:12px;">
-          ${metricCard('Est. Monthly Organic Traffic', etv>0?'~'+(Math.round(etv*12)).toLocaleString():'Minimal', sc(etv>0?(etv*12>500?75:etv*12>100?45:20):10), etv>0?'organic visits/mo':'Low organic presence', 'Organic search visits based on keyword rankings')}
+          ${metricCard('Est. Monthly Organic Traffic', etv>0?'~'+(Math.round(etv)).toLocaleString():'Minimal', sc(etv>0?(etv>500?75:etv>100?45:20):10), etv>0?'organic visits/mo':'Low organic presence', 'Modeled from keyword rankings x search volume. Counts Google organic visits only. Tools that estimate ALL traffic (direct, social, ads) will show different numbers')}
           ${metricCard('Page 1 Keywords', p1kws, sc(p1kws>=5?75:p1kws>=1?45:10), 'in Google top 10', 'Keywords where your site appears on the first page of Google')}
           ${metricCard('Domain Rank', bl.domainRank??'N/A', sc(bl.domainRank), 'authority score', 'Your website\'s overall authority. Higher = more trust from Google')}
         </div>
@@ -3214,7 +3219,7 @@ function buildPresentationSlides(d) {
         <div class="pres-metric-grid cols-3">
           ${metricCard('Page 1 Rankings', p1kws, sc(p1kws>=5?75:p1kws>=1?45:10), 'keywords in top 10', 'Page 1 is where 95% of search clicks happen')}
           ${metricCard('Total Ranked Keywords', rankedKws.length, sc(rankedKws.length>=20?75:rankedKws.length>=5?45:20), 'with confirmed positions', 'Click to see all keywords →', 'openModal(\'modal-keywords\')')}
-          ${metricCard('Est. Traffic Value', etv>0?'$'+etv.toFixed(2)+'/mo':'$0.00', sc(etv>50?75:etv>10?45:20), 'equivalent ad spend', 'What you\'d pay in Google Ads for equivalent clicks')}
+          ${metricCard('Est. Traffic Value', ptc>0?'$'+ptc.toFixed(2)+'/mo':'$0.00', sc(ptc>500?75:ptc>100?45:20), 'equivalent ad spend', 'What you\'d pay in Google Ads for equivalent clicks')}
         </div>
       </div>
     </div>`);
