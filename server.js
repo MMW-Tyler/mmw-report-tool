@@ -1183,19 +1183,19 @@ app.post('/api/ai-visibility', async (req, res) => {
   ];
 
   try {
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1200,
-        messages: [{
-          role: 'user',
-          content: `You ARE an AI assistant — the kind of tool patients increasingly use instead of Google to find local providers.
+    // Give Claude the web search tool so it answers from live results
+    // (real local competitors, ratings, review counts) the way claude.ai
+    // does. Without it the model only has training data, and the
+    // no-guessing rule below makes it honestly decline to name providers
+    // in smaller markets, so every report read as "I don't have enough
+    // information" instead of showing who outranks the prospect.
+    const requestBody = {
+      model: 'claude-sonnet-5',
+      max_tokens: 4000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
+      messages: [{
+        role: 'user',
+        content: `You ARE an AI assistant with live web search, the kind of tool patients increasingly use instead of Google to find local providers.
 
 Business being analyzed (the prospect): ${businessName}
 Location: ${city}, ${state}
@@ -1205,16 +1205,16 @@ Website: ${website || 'unknown'}
 
 STEP 1: Write the 3 questions a real patient in ${city}, ${state} would ask an AI assistant when looking for THIS type of provider. Match the category exactly and use the words a patient would actually use for it (a naturopathic practice → "naturopathic doctor", a chiropractor → "chiropractor", a hormone clinic → "hormone therapy", a med spa → "med spa"). Do NOT default to medical spa or aesthetics wording unless that is genuinely this business's category. One question should ask who is best, one should ask for top providers nearby, one should ask about reviews or recommendations. Each must name the location.
 
-STEP 2: Answer each of your 3 questions HONESTLY and naturally, exactly as you would for a real user.
+STEP 2: Use web search to find which providers actually surface for those questions in ${city}, ${state} today (top-rated local providers, review sites, local directories). Then answer each of your 3 questions HONESTLY and naturally, exactly as you would for a real user, naming the real top providers your searches turned up. Include star ratings and review counts when your search results show them.
 
 Critical rules:
-- Use ONLY real providers you actually have knowledge of for this location. NEVER invent, guess, or use placeholder names. Fabricated names would make this analysis worthless.
-- If you do not have confident knowledge of specific named providers in this area, say so plainly (e.g. "I don't have enough information to confidently recommend specific named providers in this area") and describe what you'd advise the patient to do instead. That honest answer is itself the finding.
-- After answering, determine whether "${businessName}" appeared in your answer. It almost certainly will not unless it has a strong, well-cited online presence.
+- Name ONLY providers that appear in your search results or that you have confident prior knowledge of. NEVER invent, guess, or use placeholder names, ratings, or review counts. Fabricated data would make this analysis worthless.
+- If your searches genuinely surface no named providers for a question, say so plainly and describe what you'd advise the patient to do instead. That honest answer is itself the finding.
+- After answering, determine whether "${businessName}" appeared in your answers. Whether and where it shows up is the entire point of this analysis, so check your search results for it specifically before deciding.
 
-For each answer, write 2-4 sentences. Vary the wording between answers — do not repeat the same sentence structure. Then give 2-3 specific, honest reasons why ${businessName} did or did not surface in your answers, grounded in how AI assistants decide what to cite (training-data presence, third-party citations/directories, review volume, structured content).
+For each answer, write 2-4 sentences. Vary the wording between answers, do not repeat the same sentence structure. Then give 2-3 specific, honest reasons why ${businessName} did or did not surface in your answers, grounded in what your searches actually showed (review volume and rating vs the providers you named, third-party citations/directories, structured content AI assistants can cite).
 
-Return ONLY this JSON, no markdown, no commentary:
+Return ONLY this JSON as your final text, no markdown, no commentary, and no citation markers inside the JSON:
 {
   "queries": [
     { "q": "your first patient question", "result": "your genuine answer to this question", "appears": false },
@@ -1226,26 +1226,57 @@ Return ONLY this JSON, no markdown, no commentary:
 }
 
 Set each "appears" (and the top-level "appears") to true ONLY if you genuinely named ${businessName} in that answer.`
-        }]
-      })
-    });
+      }]
+    };
 
-    const data = await claudeRes.json();
-    const text = data.content?.[0]?.text;
+    const callClaude = async () => {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      return r.json();
+    };
+
+    let data = await callClaude();
+    // Long server-side search turns can stop with pause_turn; resume by
+    // sending the partial turn back until Claude finishes its answer.
+    for (let hop = 0; hop < 3 && data.stop_reason === 'pause_turn'; hop++) {
+      requestBody.messages.push({ role: 'assistant', content: data.content });
+      data = await callClaude();
+    }
+
+    // With search in play the reply mixes tool-use and search-result blocks
+    // in with the text, so join every text block instead of reading [0].
+    const text = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
     if (!text) {
       // Claude API returned an error response (bad model id, rate limit, auth)
-      // rather than throwing — fall back so the report never renders blank.
+      // rather than throwing. Fall back so the report never renders blank.
       throw new Error(`No content in Claude response: ${JSON.stringify(data).slice(0, 300)}`);
     }
+    // The model is told to end with bare JSON, but a cited search answer can
+    // sneak prose in around it, so slice from the first { to the last }.
     const cleaned = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start === -1 || end <= start) {
+      throw new Error('No JSON object in AI visibility response');
+    }
+    const parsed = JSON.parse(cleaned.slice(start, end + 1));
     if (!parsed.queries || !parsed.queries.length) {
       throw new Error('Parsed AI visibility missing queries');
     }
     // source:'claude' confirms (in Diagnostics) this is a live Claude response,
     // not the canned fallback below.
     parsed.source = 'claude';
-    parsed.model = 'claude-sonnet-4-6';
+    parsed.model = `${requestBody.model} + web search`;
     res.json(parsed);
 
   } catch (err) {
