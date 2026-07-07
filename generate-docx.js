@@ -516,8 +516,14 @@ async function generateReport(data) {
   const allKws    = [...targetKws, ...keywords.filter(k => !k.isTarget)];
   const p1kws     = allKws.filter(k => k.isPage1).length;
   const allDirs   = [...(baseline.locals || []), ...(baseline.directories || [])];
+  // etv is DataForSEO's estimated organic visits PER MONTH (search volume x
+  // CTR-by-position). It was previously multiplied by 12 here, which inflated
+  // the "organic visits/mo" card 12x and made the report wildly disagree with
+  // tools like SimilarWeb. Never multiply by 12 or show etv as dollars; the
+  // dollar figure is estimatedPaidTrafficCost.
   const etv       = dfs.domainOverview?.etv ?? 0;
-  const estMonthly = etv > 0 ? Math.round(etv * 12) : null;
+  const ptc       = dfs.domainOverview?.estimatedPaidTrafficCost ?? 0;
+  const estMonthly = etv > 0 ? Math.round(etv) : null;
 
   console.log('[DOCX] Fetching images & generating QR code...');
   const [imgs, qrBuffer] = await Promise.all([
@@ -579,10 +585,10 @@ async function generateReport(data) {
     spacer(12),
 
     greenSubHeading('Your Website Traffic Snapshot', SZ_SECTION),
-    body('Estimated monthly organic traffic is based on your current keyword rankings and their associated search volumes. This is search-driven traffic — the kind MMW directly improves.'),
+    body('Estimated monthly organic traffic is based on your current keyword rankings and their associated search volumes. This is Google search-driven traffic only, the kind MMW directly improves. It excludes direct, social, referral, and paid visits, so tools that estimate total site traffic (such as SimilarWeb) will naturally show a different, usually higher, number. All third-party traffic figures are modeled estimates, not analytics.'),
     spacer(6),
     metricGrid([
-      { label: 'Est. Monthly Organic Traffic', value: estMonthly ? `~${estMonthly.toLocaleString()}` : 'Minimal', sub: estMonthly ? 'organic visits/mo' : 'Low organic presence', raw: estMonthly ? (estMonthly > 500 ? 75 : estMonthly > 100 ? 45 : 20) : 10, explain: 'Based on keyword rankings and search volume. Higher traffic = more patients finding you without ads.' },
+      { label: 'Est. Monthly Organic Traffic', value: estMonthly ? `~${estMonthly.toLocaleString()}` : 'Minimal', sub: estMonthly ? 'organic visits/mo' : 'Low organic presence', raw: estMonthly ? (estMonthly > 500 ? 75 : estMonthly > 100 ? 45 : 20) : 10, explain: 'Google organic search visits only, modeled from keyword rankings and search volume. Higher traffic = more patients finding you without ads.' },
       { label: 'Page 1 Keywords', value: p1kws, sub: 'in Google top 10', raw: p1kws >= 5 ? 75 : p1kws >= 1 ? 45 : 10, explain: 'Keywords where your site appears on the first page of Google. Page 1 captures 95% of all search clicks.' },
       { label: 'Domain Rank', value: bl.domainRank ?? 'N/A', sub: 'authority score', raw: bl.domainRank, explain: 'Your website\'s overall authority score. Higher scores help you outrank competitors for the same keywords.' },
     ]),
@@ -695,7 +701,7 @@ async function generateReport(data) {
     metricGrid([
       { label: 'Page 1 Rankings', value: p1kws, sub: 'keywords in top 10', raw: p1kws >= 5 ? 75 : p1kws >= 1 ? 45 : 10, explain: 'Page 1 is where 95% of search clicks happen. Every page 1 keyword is a potential patient.' },
       { label: 'Total Ranked Keywords', value: allKws.filter(k => k.position).length, sub: 'keywords with positions', raw: allKws.length >= 20 ? 75 : allKws.length >= 5 ? 45 : 20, explain: 'Total search terms your site ranks for organically across all positions.' },
-      { label: 'Est. Traffic Value', value: etv > 0 ? '$' + etv.toFixed(2) + '/mo' : '$0.00', sub: 'equivalent ad spend', raw: etv > 50 ? 75 : etv > 10 ? 45 : 20, explain: 'What you\'d pay in Google Ads to get equivalent clicks. Shows the dollar value of your organic rankings.' },
+      { label: 'Est. Traffic Value', value: ptc > 0 ? '$' + ptc.toFixed(2) + '/mo' : '$0.00', sub: 'equivalent ad spend', raw: ptc > 500 ? 75 : ptc > 100 ? 45 : 20, explain: 'What you\'d pay in Google Ads to get equivalent clicks. Shows the dollar value of your organic rankings.' },
     ]),
     spacer(10),
 
@@ -721,7 +727,7 @@ async function generateReport(data) {
     sectionHeading('AI & ChatGPT Search Analysis: The Future of Online Visibility'),
     centeredImage(imgs.seo_vs_aeo, IMG_W, Math.round(IMG_W * 0.54), 'png'),
     spacer(8),
-    body('The way potential clients find and choose healthcare providers and medical aesthetics services is rapidly changing. Artificial intelligence (AI)-driven search tools such as ChatGPT and Google\'s own AI-powered search platform are dramatically reshaping online search behaviors. It\'s critical for your business to understand and optimize for these AI-driven platforms to remain competitive and visible in 2025 and beyond.'),
+    body('The way potential clients find and choose healthcare and wellness providers is rapidly changing. Artificial intelligence (AI)-driven search tools such as ChatGPT and Google\'s own AI-powered search platform are dramatically reshaping online search behaviors. It\'s critical for your business to understand and optimize for these AI-driven platforms to remain competitive and visible in 2025 and beyond.'),
     spacer(8),
     subHeading('Why AI Searches (Like ChatGPT) Matter:'),
     body('AI-based search platforms aren\'t simply a passing trend — they represent a fundamental shift in how users find information online. Tools like ChatGPT deliver direct, concise answers instead of a long list of website results, which significantly impacts how prospective clients discover and select healthcare providers, wellness practices, medical spas, and aesthetics professionals.'),

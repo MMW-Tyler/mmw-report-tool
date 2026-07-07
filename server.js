@@ -20,6 +20,55 @@ const DATAFORSEO_PASSWORD = process.env.DATAFORSEO_PASSWORD;
 const AL_BASE = 'https://p.lssdev.com';
 
 // ─────────────────────────────────────────────
+// ADDRESS PARSING — structured components first, formatted_address fallback.
+// Businesses inside shared spaces (e.g. salon suites like "Sola Studios")
+// often return sparse address_components that omit street_number / postal_code
+// / country even though formatted_address contains them. Without the fallback
+// those fields arrive empty and the citation scan is skipped with a misleading
+// "Missing phone/street/zip" error.
+// ─────────────────────────────────────────────
+function parsePlaceAddress(p) {
+  const components = p.address_components || [];
+  const long  = (type) => { const c = components.find(c => c.types.includes(type)); return c ? c.long_name  : ''; };
+  const short = (type) => { const c = components.find(c => c.types.includes(type)); return c ? c.short_name : ''; };
+
+  const streetNumber = long('street_number');
+  const streetName   = long('route');
+  const fa = p.formatted_address || '';
+
+  let street = streetNumber && streetName ? `${streetNumber} ${streetName}` : '';
+  if (!street && fa) street = fa.split(',')[0].trim();
+
+  let zip = long('postal_code');
+  if (!zip && fa) {
+    const ca = fa.match(/\b[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d\b/);  // Canadian postal code (distinctive)
+    if (ca) {
+      zip = ca[0].toUpperCase();
+    } else {
+      // US ZIP — take the LAST 5-digit run so a street number (e.g. "10084
+      // Reisterstown Road ... 21117") doesn't get mistaken for the ZIP.
+      const us = fa.match(/\b\d{5}(?:-\d{4})?\b/g);
+      if (us && us.length) zip = us[us.length - 1];
+    }
+  }
+
+  let country = short('country');
+  if (!country && fa) {
+    if (/\bcanada\b/i.test(fa)) country = 'CA';
+    else if (/\bUSA\b|\bunited states\b/i.test(fa)) country = 'US';
+  }
+
+  return {
+    street,
+    suite:   long('subpremise') || '',
+    city:    long('locality') || long('sublocality'),
+    state:   short('administrative_area_level_1'),
+    zip,
+    country: country || '',
+  };
+}
+
+// ─────────────────────────────────────────────
 // SUGGESTED KEYWORD SETS BY NICHE
 // [city] and [state] are replaced at runtime with the prospect's location
 // ─────────────────────────────────────────────
@@ -71,6 +120,12 @@ const NICHE_KEYWORDS = {
     'alternative medicine [city]', 'IV therapy [city]',
     'functional wellness [city]', 'holistic health [city]'
   ],
+  naturopathic: [
+    'naturopathic doctor [city]', 'naturopath near me',
+    'naturopathic medicine [city]', 'holistic doctor [city]',
+    'functional medicine doctor [city]', 'natural medicine clinic [city]',
+    'alternative medicine doctor [city]', 'best naturopathic doctor [city]'
+  ],
   aesthetics_skincare: [
     'skin care clinic [city]', 'facial near me',
     'chemical peel [city]', 'microneedling [city]',
@@ -85,21 +140,54 @@ const NICHE_KEYWORDS = {
   ]
 };
 
-// Map specialty/category strings to niche keys
+// Map specialty/category strings to niche keys.
+// The stated specialty is classified FIRST, on its own; service lists often
+// mention crossover offerings (a naturopath listing "hormone testing", a
+// chiropractor listing "weight loss coaching") that would otherwise hijack
+// the niche. Only when the specialty alone is inconclusive does the combined
+// specialty + category + services text decide.
 function detectNiche(specialty, googleCategory, services) {
-  const text = [specialty, googleCategory, ...(services||[])].join(' ').toLowerCase();
+  const classify = (text) => {
+    if (/naturopath/.test(text)) return 'naturopathic';
+    if (/spa|botox|filler|coolsculpt|aesthetic|medspa|med spa/.test(text)) return 'medical_spa';
+    if (/hormone|testosterone|bioidentical|menopause|thyroid|functional medicine/.test(text)) return 'hormone_therapy';
+    if (/weight loss|bariatric|semaglutide|glp|wegovy|tirzepatide|obesity/.test(text)) return 'weight_loss';
+    if (/gynecol|obgyn|ob-gyn|women.s health|pelvic|vaginal|urogyn/.test(text)) return 'womens_health';
+    if (/chiropractic|chiropractor|spine|spinal|decompression/.test(text)) return 'chiropractic';
+    if (/dermatol|skin cancer|acne|eczema|psoriasis/.test(text)) return 'dermatology';
+    if (/concierge|direct primary|executive health|preventive/.test(text)) return 'concierge_medicine';
+    if (/integrative|holistic|wellness|alternative medicine|iv therapy/.test(text)) return 'integrative_wellness';
+    if (/esthetician|facial|peel|microneedl|hydrafacial|skin care/.test(text)) return 'aesthetics_skincare';
+    return null;
+  };
 
-  if (/spa|botox|filler|coolsculpt|aesthetic|medspa|med spa/.test(text)) return 'medical_spa';
-  if (/hormone|testosterone|bioidentical|menopause|thyroid|functional medicine/.test(text)) return 'hormone_therapy';
-  if (/weight loss|bariatric|semaglutide|glp|wegovy|tirzepatide|obesity/.test(text)) return 'weight_loss';
-  if (/gynecol|obgyn|ob-gyn|women.s health|pelvic|vaginal|urogyn/.test(text)) return 'womens_health';
-  if (/chiropractic|chiropractor|spine|spinal|decompression/.test(text)) return 'chiropractic';
-  if (/dermatol|skin cancer|acne|eczema|psoriasis/.test(text)) return 'dermatology';
-  if (/concierge|direct primary|executive health|preventive/.test(text)) return 'concierge_medicine';
-  if (/integrative|holistic|naturopath|wellness|alternative medicine|iv therapy/.test(text)) return 'integrative_wellness';
-  if (/esthetician|facial|peel|microneedl|hydrafacial|skin care/.test(text)) return 'aesthetics_skincare';
+  return classify((specialty || '').toLowerCase())
+      || classify([specialty, googleCategory, ...(services || [])].join(' ').toLowerCase())
+      || 'general_medical';
+}
 
-  return 'general_medical';
+// Map our internal niche keys to REAL Google Business Profile category slugs
+// (the part after "gcid:" in Google's taxonomy). Advice Local's categoryGoogle
+// field is validated against this taxonomy and rejects anything that isn't a
+// genuine GCID (e.g. Claude's free-form "general_business" → HTTP 400
+// "Could not find gcid"). Every slug below is a verified GBP category, so the
+// citation scan gets an accurate category instead of a hallucinated one.
+const NICHE_GCID = {
+  medical_spa:          'medical_spa',
+  hormone_therapy:      'medical_clinic',
+  weight_loss:          'weight_loss_service',
+  womens_health:        'obstetrician_gynecologist',
+  chiropractic:         'chiropractor',
+  dermatology:          'dermatologist',
+  concierge_medicine:   'doctor',
+  integrative_wellness: 'wellness_center',
+  naturopathic:         'naturopathic_practitioner',
+  aesthetics_skincare:  'skin_care_clinic',
+  general_medical:      'medical_clinic'
+};
+
+function nicheToGcid(niche) {
+  return NICHE_GCID[niche] || NICHE_GCID.general_medical;
 }
 
 function buildSuggestedKeywords(niche, city) {
@@ -178,20 +266,19 @@ app.post('/api/places-details', async (req, res) => {
     }
 
     const p = detailData.result;
-    const components = p.address_components || [];
-    const getComp  = (type) => { const c = components.find(c => c.types.includes(type)); return c ? c.long_name  : ''; };
-    const getShort = (type) => { const c = components.find(c => c.types.includes(type)); return c ? c.short_name : ''; };
+    const addr = parsePlaceAddress(p);
 
     res.json({
       placeId,
       name:             p.name,
       formattedAddress: p.formatted_address,
       phone:            p.formatted_phone_number || '',
-      street:           [getComp('street_number'), getComp('route')].filter(Boolean).join(' '),
-      suite:            getComp('subpremise') || '',
-      city:             getComp('locality') || getComp('sublocality'),
-      state:            getShort('administrative_area_level_1'),
-      zip:              getComp('postal_code'),
+      street:           addr.street,
+      suite:            addr.suite,
+      city:             addr.city,
+      state:            addr.state,
+      zip:              addr.zip,
+      country:          addr.country,
       website:          p.website || '',
       rating:           p.rating || null,
       reviewCount:      p.user_ratings_total || 0,
@@ -333,35 +420,19 @@ app.post('/api/places', async (req, res) => {
     }
 
     const p = detailData.result;
-
-    // Parse address components into parts
-    const components = p.address_components || [];
-    const getComponent = (type) => {
-      const c = components.find(c => c.types.includes(type));
-      return c ? c.long_name : '';
-    };
-    const getShortComponent = (type) => {
-      const c = components.find(c => c.types.includes(type));
-      return c ? c.short_name : '';
-    };
-
-    const streetNumber = getComponent('street_number');
-    const streetName = getComponent('route');
-    const suite = getComponent('subpremise');
-    const city_parsed = getComponent('locality') || getComponent('sublocality');
-    const state_parsed = getShortComponent('administrative_area_level_1');
-    const zip = getComponent('postal_code');
+    const addr = parsePlaceAddress(p);
 
     res.json({
       placeId,
       name: p.name,
       formattedAddress: p.formatted_address,
       phone: p.formatted_phone_number || '',
-      street: streetNumber && streetName ? `${streetNumber} ${streetName}` : '',
-      suite: suite || '',
-      city: city_parsed,
-      state: state_parsed,
-      zip,
+      street: addr.street,
+      suite: addr.suite,
+      city: addr.city,
+      state: addr.state,
+      zip: addr.zip,
+      country: addr.country,
       website: p.website || '',
       rating: p.rating || null,
       reviewCount: p.user_ratings_total || 0,
@@ -488,7 +559,7 @@ ${text}
 
 Return this exact JSON structure:
 {
-  "specialty": "primary specialty or service type (e.g. Medical Aesthetics, Hormone Therapy, Medical Spa)",
+  "specialty": "primary specialty or service type in the practice's own words (e.g. Naturopathic Medicine, Chiropractic, Dermatology, Hormone Therapy, Medical Spa, Medical Aesthetics). Do NOT default to Medical Aesthetics — use what this site actually is",
   "description": "1-2 sentence business description suitable for directory listings",
   "services": ["service1", "service2", "service3"],
   "googleCategory": "best matching Google Business category slug (e.g. skin_care_clinic, medical_spa, wellness_center)",
@@ -579,10 +650,10 @@ app.post('/api/website-audit', async (req, res) => {
         max_tokens: 1200,
         messages: [{
           role: 'user',
-          content: `You are auditing a medical aesthetics or healthcare practice website for a marketing sales presentation. Be direct, specific, and actionable. This is for a sales rep to show a prospect what's wrong with their site.
+          content: `You are auditing a healthcare practice website for a marketing sales presentation. Be direct, specific, and actionable. This is for a sales rep to show a prospect what's wrong with their site. Tailor every finding to this practice's actual specialty. Do not assume it is a med spa or aesthetics practice unless the specialty says so.
 
 Business: ${businessName}
-Specialty: ${specialty || 'medical aesthetics'}
+Specialty: ${specialty || 'healthcare'}
 Services listed on site: ${(services || []).join(', ')}
 URL: ${url}
 
@@ -653,36 +724,81 @@ Return ONLY this JSON, no markdown:
 // ADVICE LOCAL — create client, get report, delete
 // ─────────────────────────────────────────────
 app.post('/api/advice-local/scan', async (req, res) => {
-  const { name, phone, street, suite, city, state, zip, website, description, category } = req.body;
+  const { name, phone, street, suite, city, state, zip, website, description, category, country } = req.body;
   if (!name || !phone || !street || !city || !state || !zip) {
     return res.status(400).json({ error: 'Missing required business fields' });
   }
 
+  // Advice Local supports US and Canada. The legacyclients model defaults to
+  // "US" when no country is sent, which silently returns an EMPTY directory
+  // scan for Canadian addresses (province in state, alphanumeric postal code).
+  // Normalize to a 2-letter code so CA businesses actually get scanned.
+  const countryCode = (country || '').trim().toUpperCase() === 'CA' ? 'CA' : 'US';
+
+  // Advice Local requires description to be 100–2048 chars when provided.
+  // Pad a short one (rather than fail the create) and cap an over-long one.
+  let descToSend = (description || '').trim();
+  if (descToSend && descToSend.length < 100) {
+    descToSend = `${descToSend} ${name} serves clients in ${city}, ${state}. Contact the office to learn more about available services, consultations, and appointment availability.`.replace(/\s+/g, ' ').trim();
+  }
+  if (descToSend.length > 2048) descToSend = descToSend.slice(0, 2048);
+
   let clientId = null;
 
   try {
-    // Create client
-    const params = new URLSearchParams();
-    params.append('name', name);
-    params.append('phone', phone);
-    params.append('street', street);
-    params.append('city', city);
-    params.append('state', state);
-    params.append('zipcode', zip);
-    if (suite) params.append('suite', suite);
-    if (website) params.append('website', website);
-    if (description) params.append('description', description);
-    if (category) params.append('categoryGoogle', category);
+    // Build the create payload. categoryGoogle is an OPTIONAL enrichment field —
+    // it's kept separate so we can drop it and retry if Advice Local rejects it.
+    const buildParams = (includeCategory) => {
+      const params = new URLSearchParams();
+      params.append('name', name);
+      params.append('phone', phone);
+      params.append('street', street);
+      params.append('city', city);
+      params.append('state', state);
+      params.append('zipcode', zip);
+      params.append('country', countryCode);
+      if (suite) params.append('suite', suite);
+      if (website) params.append('website', website);
+      if (descToSend) params.append('description', descToSend);
+      if (includeCategory && category) params.append('categoryGoogle', category);
+      return params;
+    };
 
-    const createRes = await fetch(`${AL_BASE}/legacyclients`, {
+    const doCreate = (includeCategory) => fetch(`${AL_BASE}/legacyclients`, {
       method: 'POST',
       headers: { 'x-api-token': AL_KEY, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString()
+      body: buildParams(includeCategory).toString()
     });
-    const createData = await createRes.json();
+
+    // Create client (first attempt includes the Google category if we have one)
+    let categorySent = !!category;
+    let createRes = await doCreate(true);
+    let createData = await createRes.json();
+
+    // The category slug comes from Claude's website extraction and can be a
+    // hallucinated/non-existent GCID (e.g. "general_business"), which Advice
+    // Local rejects with HTTP 400 "Could not find gcid". categoryGoogle is only
+    // an optional refinement, so don't let a bad category sink the entire
+    // citation scan — drop it and retry the create without it.
+    const isGcidError = (data) =>
+      /could not find gcid|gcid:/i.test(JSON.stringify(data || ''));
+    if (category && (!createData.success || !createData.data?.id) && isGcidError(createData)) {
+      console.log(`Advice Local: invalid Google category "${category}" — retrying create without categoryGoogle`);
+      categorySent = false;
+      createRes = await doCreate(false);
+      createData = await createRes.json();
+    }
 
     if (!createData.success || !createData.data?.id) {
-      throw new Error('Advice Local create failed: ' + JSON.stringify(createData.error || createData));
+      // Surface the full response AND the payload we sent so Diagnostics can
+      // show exactly which field Advice Local rejected (e.g. a website with a
+      // query string, a malformed phone, an unsupported state/country).
+      const sent = {
+        name, phone, street, suite: suite || '', city, state, zipcode: zip,
+        country: countryCode, website: website || '',
+        descriptionLength: descToSend.length, categoryGoogle: categorySent ? (category || '') : ''
+      };
+      throw new Error(`Advice Local create failed (HTTP ${createRes.status}): ${JSON.stringify(createData)} — sent: ${JSON.stringify(sent)}`);
     }
 
     clientId = createData.data.id;
@@ -715,7 +831,7 @@ app.post('/api/advice-local/scan', async (req, res) => {
       headers: { 'x-api-token': AL_KEY, 'Content-Type': 'application/json' }
     });
 
-    res.json({ success: true, clientId, report: reportData });
+    res.json({ success: true, clientId, country: countryCode, report: reportData });
 
   } catch (err) {
     // Attempt cleanup
@@ -841,7 +957,12 @@ app.post('/api/dataforseo', async (req, res) => {
                  (organic.pos_81_90 || 0) + (organic.pos_91_100 || 0),
       totalKeywords: (organic.pos_1 || 0) + (organic.pos_2_3 || 0) +
                      (organic.pos_4_10 || 0) + (organic.pos_11_20 || 0),
-      etv: organic.etv || 0, // estimated traffic value
+      // etv = DataForSEO's Estimated Traffic Volume: estimated organic visits
+      // PER MONTH (search volume x CTR-by-position). It is NOT a dollar amount
+      // and NOT an annual figure, so do not multiply by 12 or prefix with $.
+      etv: organic.etv || 0,
+      // The dollar figure lives here: what the same clicks would cost in ads.
+      estimatedPaidTrafficCost: organic.estimated_paid_traffic_cost || 0,
     };
 
     // State abbreviation -> full name for DataForSEO location_name
@@ -1042,10 +1163,19 @@ app.post('/api/dataforseo', async (req, res) => {
 // CLAUDE — AI visibility check
 // ─────────────────────────────────────────────
 app.post('/api/ai-visibility', async (req, res) => {
-  const { businessName, city, state, specialty, website } = req.body;
-  const spec = specialty || 'medical aesthetics';
+  const { businessName, city, state, specialty, website, services } = req.body;
+  // Normalize specialty — website extraction sometimes returns "Unknown" or
+  // empty for JS-heavy sites, which produced nonsense queries like
+  // "best Unknown in Miami". Fall back to a neutral category term (NOT
+  // "medical aesthetics", since reps run this tool for naturopaths, chiropractors,
+  // hormone clinics, etc., and med-spa questions read as wrong to prospects).
+  const rawSpec = (specialty || '').trim();
+  const spec = (!rawSpec || /^unknown$/i.test(rawSpec)) ? 'medical care' : rawSpec;
 
-  // Build 3 realistic queries a patient might ask
+  // Template queries, used only as the error fallback. In the live path,
+  // Claude writes the queries itself so the wording matches how a patient
+  // would actually ask for THIS provider type (e.g. "naturopathic doctor",
+  // not a generic med-spa phrasing).
   const queries = [
     `Who offers the best ${spec} in ${city}, ${state}?`,
     `Top ${spec} providers near ${city}, ${state}`,
@@ -1053,65 +1183,107 @@ app.post('/api/ai-visibility', async (req, res) => {
   ];
 
   try {
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1200,
-        messages: [{
-          role: 'user',
-          content: `You are simulating what ChatGPT would actually return when asked about local medical/aesthetics providers. This is for a marketing sales presentation showing a prospect their AI visibility.
+    // Give Claude the web search tool so it answers from live results
+    // (real local competitors, ratings, review counts) the way claude.ai
+    // does. Without it the model only has training data, and the
+    // no-guessing rule below makes it honestly decline to name providers
+    // in smaller markets, so every report read as "I don't have enough
+    // information" instead of showing who outranks the prospect.
+    const requestBody = {
+      model: 'claude-sonnet-5',
+      max_tokens: 4000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
+      messages: [{
+        role: 'user',
+        content: `You ARE an AI assistant with live web search, the kind of tool patients increasingly use instead of Google to find local providers.
 
-Business we are analyzing: ${businessName}
+Business being analyzed (the prospect): ${businessName}
 Location: ${city}, ${state}
-Specialty: ${spec}
+Category/specialty: ${spec}
+${services && services.length ? `Services offered: ${services.slice(0, 8).join(', ')}` : ''}
 Website: ${website || 'unknown'}
 
-For each of the 3 queries below, simulate what ChatGPT would realistically return — name 2-3 actual types of businesses or well-known local providers that WOULD appear (use realistic placeholder names if needed, like "Newton Dermatology Associates" or "Boston MedSpa Group"), and state clearly whether ${businessName} appears or not. Be specific and realistic — this should feel like an actual AI search result, not a generic disclaimer.
+STEP 1: Write the 3 questions a real patient in ${city}, ${state} would ask an AI assistant when looking for THIS type of provider. Match the category exactly and use the words a patient would actually use for it (a naturopathic practice → "naturopathic doctor", a chiropractor → "chiropractor", a hormone clinic → "hormone therapy", a med spa → "med spa"). Do NOT default to medical spa or aesthetics wording unless that is genuinely this business's category. One question should ask who is best, one should ask for top providers nearby, one should ask about reviews or recommendations. Each must name the location.
 
-Query 1: "${queries[0]}"
-Query 2: "${queries[1]}"
-Query 3: "${queries[2]}"
+STEP 2: Use web search to find which providers actually surface for those questions in ${city}, ${state} today (top-rated local providers, review sites, local directories). Then answer each of your 3 questions HONESTLY and naturally, exactly as you would for a real user, naming the real top providers your searches turned up. Include star ratings and review counts when your search results show them.
 
-Then provide 2-3 specific reasons why ${businessName} is NOT appearing in AI results based on their digital footprint.
+Critical rules:
+- Name ONLY providers that appear in your search results or that you have confident prior knowledge of. NEVER invent, guess, or use placeholder names, ratings, or review counts. Fabricated data would make this analysis worthless.
+- If your searches genuinely surface no named providers for a question, say so plainly and describe what you'd advise the patient to do instead. That honest answer is itself the finding.
+- After answering, determine whether "${businessName}" appeared in your answers. Whether and where it shows up is the entire point of this analysis, so check your search results for it specifically before deciding.
 
-Return ONLY this JSON, no markdown:
+For each answer, write 2-4 sentences. Vary the wording between answers, do not repeat the same sentence structure. Then give 2-3 specific, honest reasons why ${businessName} did or did not surface in your answers, grounded in what your searches actually showed (review volume and rating vs the providers you named, third-party citations/directories, structured content AI assistants can cite).
+
+Return ONLY this JSON as your final text, no markdown, no commentary, and no citation markers inside the JSON:
 {
   "queries": [
-    { "q": "${queries[0]}", "result": "2-3 sentence simulation of what ChatGPT would actually say, naming who DOES appear and noting ${businessName} is not among them", "appears": false },
-    { "q": "${queries[1]}", "result": "realistic AI result simulation", "appears": false },
-    { "q": "${queries[2]}", "result": "realistic AI result simulation", "appears": false }
+    { "q": "your first patient question", "result": "your genuine answer to this question", "appears": false },
+    { "q": "your second patient question", "result": "your genuine answer", "appears": false },
+    { "q": "your third patient question", "result": "your genuine answer", "appears": false }
   ],
   "appears": false,
-  "reasons": "2-3 specific reasons why this business is not appearing in AI results"
-}`
-        }]
-      })
-    });
+  "reasons": "2-3 specific honest reasons tied to this business's digital footprint"
+}
 
-    const data = await claudeRes.json();
-    const text = data.content?.[0]?.text;
+Set each "appears" (and the top-level "appears") to true ONLY if you genuinely named ${businessName} in that answer.`
+      }]
+    };
+
+    const callClaude = async () => {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      return r.json();
+    };
+
+    let data = await callClaude();
+    // Long server-side search turns can stop with pause_turn; resume by
+    // sending the partial turn back until Claude finishes its answer.
+    for (let hop = 0; hop < 3 && data.stop_reason === 'pause_turn'; hop++) {
+      requestBody.messages.push({ role: 'assistant', content: data.content });
+      data = await callClaude();
+    }
+
+    // With search in play the reply mixes tool-use and search-result blocks
+    // in with the text, so join every text block instead of reading [0].
+    const text = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
     if (!text) {
       // Claude API returned an error response (bad model id, rate limit, auth)
-      // rather than throwing — fall back to the default simulation so the
-      // report never renders a blank AI-visibility section.
+      // rather than throwing. Fall back so the report never renders blank.
       throw new Error(`No content in Claude response: ${JSON.stringify(data).slice(0, 300)}`);
     }
+    // The model is told to end with bare JSON, but a cited search answer can
+    // sneak prose in around it, so slice from the first { to the last }.
     const cleaned = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start === -1 || end <= start) {
+      throw new Error('No JSON object in AI visibility response');
+    }
+    const parsed = JSON.parse(cleaned.slice(start, end + 1));
     if (!parsed.queries || !parsed.queries.length) {
       throw new Error('Parsed AI visibility missing queries');
     }
+    // source:'claude' confirms (in Diagnostics) this is a live Claude response,
+    // not the canned fallback below.
+    parsed.source = 'claude';
+    parsed.model = `${requestBody.model} + web search`;
     res.json(parsed);
 
   } catch (err) {
     console.error('AI visibility error:', err);
     res.json({
+      source: 'fallback',
+      error: err.message,
       queries: queries.map(q => ({
         q,
         result: `${businessName} does not appear in results for this query. Established practices with strong review profiles and citation presence dominate these results.`,
@@ -1145,7 +1317,7 @@ app.post('/api/recommendation', async (req, res) => {
           content: `You are a marketing strategist at Medical Marketing Whiz recommending a program tier to a prospect based on their digital presence analysis.
 
 Prospect: ${businessName}, ${city} ${state}
-Specialty: ${specialty || 'medical aesthetics'}
+Specialty: ${specialty || 'healthcare'}
 
 Analysis scores:
 - Visibility: ${scores.visibility ?? 'unknown'}%
@@ -1485,6 +1657,7 @@ app.post('/api/generate-report', async (req, res) => {
     const resolvedCity = results.places?.city || city;
     const resolvedState = results.places?.state || state;
     const resolvedZip = results.places?.zip || '';
+    const resolvedCountry = results.places?.country || '';
 
     // ── STEP 2: Website extraction ──
     if (resolvedWebsite) {
@@ -1506,6 +1679,25 @@ app.post('/api/generate-report', async (req, res) => {
     // Auto-suggest target keywords based on niche
     // Priority: rep-entered keywords > forced niches > auto-detected niche
     const detectedNiche = detectNiche(specialty, category, services);
+
+    // Website extraction returns "Unknown"/empty for JS-heavy sites, which then
+    // showed up as "best Unknown in <city>" in the AI-visibility queries and as
+    // "Specialty: Unknown" on the report. Backfill a readable specialty from the
+    // detected niche so downstream output is sensible.
+    const NICHE_LABELS = {
+      medical_spa:'medical spa', hormone_therapy:'hormone therapy', weight_loss:'medical weight loss',
+      womens_health:"women's health", chiropractic:'chiropractic care', dermatology:'dermatology',
+      concierge_medicine:'concierge medicine', integrative_wellness:'integrative wellness',
+      naturopathic:'naturopathic medicine',
+      aesthetics_skincare:'medical aesthetics', general_medical:'medical care'
+    };
+    const cleanSpecialty = (specialty && !/^unknown$/i.test(specialty.trim()))
+      ? specialty
+      : (NICHE_LABELS[detectedNiche] || 'medical aesthetics');
+    if (results.websiteExtract && (!results.websiteExtract.specialty || /^unknown$/i.test(String(results.websiteExtract.specialty).trim()))) {
+      results.websiteExtract.specialty = cleanSpecialty;
+    }
+
     let effectiveTargetKeywords;
     let effectiveNiches;
 
@@ -1543,7 +1735,7 @@ app.post('/api/generate-report', async (req, res) => {
           body: JSON.stringify({
             url: resolvedWebsite,
             businessName,
-            specialty,
+            specialty: cleanSpecialty,
             services
           })
         });
@@ -1558,11 +1750,41 @@ app.post('/api/generate-report', async (req, res) => {
     const placesFound = !!(results.places?.placeId);
     const alName   = placesFound ? results.places.name   : businessName;
     const alPhone  = placesFound ? results.places.phone  : resolvedPhone;
-    const alStreet = placesFound ? results.places.street : resolvedStreet;
     const alSuite  = placesFound ? results.places.suite  : resolvedSuite;
     const alCity   = placesFound ? results.places.city   : resolvedCity;
     const alState  = placesFound ? results.places.state  : resolvedState;
-    const alZip    = placesFound ? results.places.zip    : resolvedZip;
+    let alStreet   = placesFound ? results.places.street : resolvedStreet;
+    let alZip      = placesFound ? results.places.zip    : resolvedZip;
+    let alCountry  = placesFound ? results.places.country : resolvedCountry;
+
+    // Safety net: results.places can arrive from confirmed-place data captured
+    // by an older client (or with sparse address_components), where street/zip/
+    // country are blank even though formattedAddress is complete. Re-derive any
+    // missing field here so the scan isn't skipped on a fully-known address.
+    const faAddr = results.places?.formattedAddress || '';
+    if (faAddr && (!alStreet || !alZip || !alCountry)) {
+      const fb = parsePlaceAddress({ formatted_address: faAddr, address_components: [] });
+      alStreet  = alStreet  || fb.street;
+      alZip     = alZip     || fb.zip;
+      alCountry = alCountry || fb.country;
+    }
+
+    // Advice Local rejects the create unless description is 100–2048 chars.
+    // Website extraction often returns a short/blank description (JS-heavy
+    // sites), so use it when it qualifies, otherwise build a professional one.
+    let alDescription = (description || '').trim();
+    if (alDescription.length < 100) {
+      const svc = (services && services.length) ? ` Services include ${services.slice(0, 6).join(', ')}.` : '';
+      alDescription = `${alName} is a ${cleanSpecialty} provider serving ${alCity}, ${alState} and the surrounding community.${svc} The practice is committed to quality patient care and offers consultations and treatments by appointment. Contact the office to learn more about services, pricing, and availability.`.replace(/\s+/g, ' ').trim();
+    }
+    if (alDescription.length > 2048) alDescription = alDescription.slice(0, 2048);
+
+    // Advice Local's categoryGoogle must be a real Google GCID slug. Claude's
+    // website extraction returns a free-form googleCategory that is often not a
+    // valid GCID (e.g. "general_business"), so send the verified slug mapped
+    // from the business's niche instead. Prefer the rep-selected niche when one
+    // was forced; otherwise use the auto-detected niche.
+    const alCategory = nicheToGcid((effectiveNiches && effectiveNiches[0]) || detectedNiche);
 
     if (alPhone && alStreet && alZip) {
       try {
@@ -1577,15 +1799,17 @@ app.post('/api/generate-report', async (req, res) => {
             city:        alCity,
             state:       alState,
             zip:         alZip,
+            country:     alCountry,
             website:     resolvedWebsite,
-            description,
-            category
+            description: alDescription,
+            category:    alCategory
           })
         });
         results.adviceLocal = await alRes.json();
       } catch(e) { results.errors.push({ step: 'adviceLocal', error: e.message }); }
     } else {
-      results.errors.push({ step: 'adviceLocal', error: 'Missing phone/street/zip — could not run citation scan' });
+      const missing = [!alPhone && 'phone', !alStreet && 'street', !alZip && 'zip'].filter(Boolean).join(', ');
+      results.errors.push({ step: 'adviceLocal', error: `Missing ${missing} — could not run citation scan (parsed from: ${results.places?.formattedAddress || 'no address'})` });
     }
 
     // ── STEP 4: PageSpeed (parallel with DataForSEO) ──
@@ -1619,7 +1843,7 @@ app.post('/api/generate-report', async (req, res) => {
       const aiRes = await fetch(`http://localhost:${PORT}/api/ai-visibility`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName, city, state, specialty, website: resolvedWebsite })
+        body: JSON.stringify({ businessName, city, state, specialty: cleanSpecialty, website: resolvedWebsite, services })
       });
       results.aiVisibility = await aiRes.json();
     } catch(e) { results.errors.push({ step: 'aiVisibility', error: e.message }); }
@@ -1631,7 +1855,7 @@ app.post('/api/generate-report', async (req, res) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          businessName, city, state, specialty,
+          businessName, city, state, specialty: cleanSpecialty,
           scores: {
             visibility: overview?.visibilityScore ?? null,
             nap: overview?.napScore ?? null,
